@@ -645,7 +645,7 @@ void compress_partition_uint8(uint8_t *data, partition_param_typdef *params, siz
 }
 
 void enc_bit(uint8_t bit, int16_t zeros, int16_t total) {
-    printf("%1u %f\n", bit & 1, (float)zeros/(float)total);
+    if (bit) printf("%1u %f\n", bit & 1, (float)zeros/(float)total);
 }
 
 void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
@@ -729,10 +729,9 @@ void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size
                 context_model->total_count[cntxt]++;
                 context_model->zero_count[cntxt] += (int16_t)(!bit);
                 if (context_model->total_count[cntxt] >= ICER_CONTEXT_RESCALING_CAP) {
-                    context_model->total_count[cntxt] /= 2;
-                    context_model->zero_count[cntxt] /= 2;
-
-                    //todo: when necessary, the count of zeros is rounded in the direction that makes the probability-of-zero estimate closer to 1/2)
+                    context_model->total_count[cntxt] >>= 1;
+                    if (context_model->zero_count[cntxt] > context_model->total_count[cntxt]) context_model->zero_count[cntxt] >>= 1;
+                    else icer_ceil_div_int16(context_model->zero_count[cntxt], 2);
                 }
 
                 if (category == ICER_CATEGORY_0 && bit) {
@@ -742,12 +741,12 @@ void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size
                     sv0 = 0; sv1 = 0;
 
                     /* consider the horizontally adjacent pixels */
-                    //if (col > 0) sh0 = get_sign_uint8(h0, lsb);
-                    //if (col < hor_bound) sh1 = get_sign_uint8(h1, prev_plane);
+                    if (col > 0) sh0 = get_sign_uint8(h0, lsb);
+                    if (col < hor_bound) sh1 = get_sign_uint8(h1, prev_plane);
 
                     /* consider the vertically adjacent pixels */
-                    //if (row > 0) sv0 = get_sign_uint8(v0, lsb) & 1;
-                    //if (row < vert_bound) sv1 = get_sign_uint8(v1, prev_plane) & 1;
+                    if (row > 0) sv0 = get_sign_uint8(v0, lsb);
+                    if (row < vert_bound) sv1 = get_sign_uint8(v1, prev_plane);
 
                     sh = sh0 + sh1 + 2;
                     sv = sv0 + sv1 + 2;
@@ -770,10 +769,9 @@ void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size
                     context_model->total_count[sign_context]++;
                     context_model->zero_count[sign_context] += (int16_t)(agreement_bit == 0);
                     if (context_model->total_count[sign_context] >= ICER_CONTEXT_RESCALING_CAP) {
-                        context_model->total_count[sign_context] /= 2;
-                        context_model->zero_count[sign_context] /= 2;
-
-                        //todo: when necessary, the count of zeros is rounded in the direction that makes the probability-of-zero estimate closer to 1/2)
+                        context_model->total_count[sign_context] >>= 1;
+                        if (context_model->zero_count[sign_context] > context_model->total_count[sign_context]) context_model->zero_count[sign_context] >>= 1;
+                        else icer_ceil_div_int16(context_model->zero_count[sign_context], 2);
                     }
                 }
             }

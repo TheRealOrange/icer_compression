@@ -113,7 +113,10 @@ int main() {
     uint8_t *datastart = transformed + icer_ceil_div_size_t(out_w, 2);
     partition_param_typdef partition;
     icer_generate_partition_parameters(&partition, icer_floor_div_size_t(out_w, 2), icer_ceil_div_size_t(out_h, 2), 20);
-    compress_partition_uint8(datastart, &partition, out_w, ICER_SUBBAND_HL, 0);
+    for (int i = 0;i < 7;i++) {
+        printf("lsb: %2d\n", i);
+        compress_partition_uint8(datastart, &partition, out_w, ICER_SUBBAND_HL, i);
+    }
 
     printf("saving wavelet transformed image to: \"%s\"\n", wavelet_filename);
     res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, transformed);
