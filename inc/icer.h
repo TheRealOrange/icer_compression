@@ -6,6 +6,25 @@
 
 #include "crc.h"
 
+#ifdef _MSC_VER
+#include <intrin.h>
+
+#define __builtin_popcount __popcnt
+#define __builtin_clz __clz
+
+uint32_t __inline __clz( uint32_t value ) {
+    DWORD leading_zero = 0;
+
+    if ( _BitScanReverse( &leading_zero, value ) ) {
+       return 31 - leading_zero;
+    } else {
+         // Same remarks as above
+         return 32;
+    }
+}
+#endif
+
+
 #define MAX_K 12
 
 enum icer_status {
@@ -307,7 +326,7 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
 int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt);
 int flush_encode(encoder_context_typedef *encoder_context);
 void init_context_model_vals(icer_context_model_typedef* context_model, enum icer_subband_types subband_type);
-void init_entropy_coder_context(encoder_context_typedef *encoder_context, int16_t *encode_buffer, size_t buffer_length, uint8_t *encoder_out, size_t enc_out_max);
+void init_entropy_coder_context(encoder_context_typedef *encoder_context, uint16_t *encode_buffer, size_t buffer_length, uint8_t *encoder_out, size_t enc_out_max);
 int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll_w, size_t ll_h, uint16_t segments);
 
 uint32_t icer_calculate_packet_crc32(image_segment_typedef *pkt);
@@ -886,7 +905,7 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
 
             init_context_model_vals(&context_model, pkt_context->subband_type);
             printf("b segment no: %d\n", segment_num);
-            if (icer_allocate_data_packet(seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
+            if (icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
             init_entropy_coder_context(&context, encode_circ_buf, 2048, seg->data, seg->data_length);
@@ -1140,7 +1159,7 @@ void init_context_model_vals(icer_context_model_typedef* context_model, enum ice
     }
 }
 
-void init_entropy_coder_context(encoder_context_typedef *encoder_context, int16_t *encode_buffer, size_t buffer_length, uint8_t *encoder_out, size_t enc_out_max) {
+void init_entropy_coder_context(encoder_context_typedef *encoder_context, uint16_t *encode_buffer, size_t buffer_length, uint8_t *encoder_out, size_t enc_out_max) {
     encoder_context->max_output_length = enc_out_max;
     encoder_context->output_buffer = encoder_out;
 
