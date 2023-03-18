@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "crc.h"
+
 #define MAX_K 12
 
 enum icer_status {
@@ -12,7 +14,7 @@ enum icer_status {
     ICER_SIZE_ERROR = 2,
     ICER_TOO_MANY_SEGMENTS = 3,
     ICER_TOO_MANY_STAGES = 4,
-    ICER_CACHE_TOO_SMALL = 5
+    ICER_BYTE_QUOTA_EXCEEDED
 };
 
 enum icer_filter_types {
@@ -61,7 +63,7 @@ const int16_t icer_wavelet_filter_parameters[][4] = {{0,  4, 4, 0},
                                                      {0,  3, 9, 8},
                                                      {0,  4, 4, 4}};
 
-#define ICER_CONTEXT_MAX 17
+#define ICER_CONTEXT_MAX 16
 #define ICER_DEFAULT_CONTEXT_ZERO_COUNT 2
 #define ICER_DEFAULT_CONTEXT_TOTAL_COUNT 4
 #define ICER_CONTEXT_RESCALING_CAP 500
@@ -145,9 +147,139 @@ enum icer_subband_types {
 
 typedef struct {
     enum icer_subband_types subband_type;
-    int16_t zero_count[ICER_CONTEXT_MAX + 1];
-    int16_t total_count[ICER_CONTEXT_MAX + 1];
+    uint32_t zero_count[ICER_CONTEXT_MAX + 1];
+    uint32_t total_count[ICER_CONTEXT_MAX + 1];
 } icer_context_model_typedef;
+
+#define ICER_ENCODER_BIN_MAX 16
+
+enum icer_encoder_bins {
+    ICER_ENC_BIN_1 = 0,
+    ICER_ENC_BIN_2,
+    ICER_ENC_BIN_3,
+    ICER_ENC_BIN_4,
+    ICER_ENC_BIN_5,
+    ICER_ENC_BIN_6,
+    ICER_ENC_BIN_7,
+    ICER_ENC_BIN_8,
+    ICER_ENC_BIN_9,
+    ICER_ENC_BIN_10,
+    ICER_ENC_BIN_11,
+    ICER_ENC_BIN_12,
+    ICER_ENC_BIN_13,
+    ICER_ENC_BIN_14,
+    ICER_ENC_BIN_15,
+    ICER_ENC_BIN_16,
+    ICER_ENC_BIN_17 = ICER_ENCODER_BIN_MAX
+};
+
+#define ICER_ENC_BUF_BITS_OFFSET 11
+#define ICER_ENC_BUF_SHIFTOUT_OFFSET 6
+#define ICER_ENC_BUF_DONE_MASK 0b0000010000000000
+#define ICER_ENC_BUF_DATA_MASK 0b0000001111111111
+#define ICER_ENC_BUF_INFO_MASK 0b1111100000000000
+
+const uint32_t icer_bin_probability_cutoffs[ICER_ENCODER_BIN_MAX+1] = {
+        35298,
+        37345,
+        40503,
+        43591,
+        47480,
+        50133,
+        53645,
+        55902,
+        57755,
+        58894,
+        60437,
+        62267,
+        63613,
+        64557,
+        65134,
+        65392,
+        65536
+};
+
+#define ICER_BIN_PROBABILITY_DENOMINATOR 65536
+
+const int32_t icer_bin_coding_scheme[ICER_ENCODER_BIN_MAX+1] = {
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        5,
+        6,
+        7,
+        11,
+        17,
+        31,
+        70,
+        200,
+        512
+};
+
+typedef struct {
+    uint8_t input_code_bits;
+    uint8_t output_code_bits;
+    uint8_t output_code;
+} custom_code_typedef;
+
+#define CUSTOM_CODING_MAX_LOOKUP 32
+custom_code_typedef custom_coding_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
+
+typedef struct {
+    uint16_t m;
+    uint16_t l;
+    uint16_t i;
+} golomb_code_typedef;
+
+golomb_code_typedef golomb_coders[ICER_ENCODER_BIN_MAX+1];
+
+typedef struct {
+    uint16_t subband_number;
+    uint8_t subband_type;
+    uint8_t ll_mean_val;
+    uint8_t lsb;
+} packet_context;
+
+#define ICER_PACKET_PREAMBLE 0x605B
+
+typedef struct {
+    uint16_t preamble;
+    uint16_t subband_number;
+    uint8_t subband_type;
+    uint8_t segment_number;
+    uint8_t lsb;
+    uint8_t ll_mean_val;
+    uint16_t data_length;
+    uint32_t crc32;
+    uint8_t *data;
+} image_segment_typedef;
+
+typedef struct {
+    size_t size_used;
+    size_t size_allocated;
+    uint8_t *data_start;
+} output_data_buf_typedef;
+
+typedef struct {
+    size_t buffer_length;
+    size_t head;
+    size_t tail;
+    size_t used;
+    size_t output_ind;
+    size_t max_output_length;
+    uint16_t *encode_buffer;
+    uint8_t output_bit_offset;
+    uint8_t *output_buffer;
+    int16_t bin_current_buf[ICER_ENCODER_BIN_MAX+1];
+    int16_t bin_current_buf_bits[ICER_ENCODER_BIN_MAX+1];
+} encoder_context_typedef;
+
+int icer_init();
 
 int icer_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
 int icer_inverse_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
@@ -166,12 +298,20 @@ void icer_deinterleave_uint8(uint8_t *data, size_t len, size_t stride);
 uint8_t icer_find_k(size_t len);
 
 
-void compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride,
-                              enum icer_subband_types subband_type, uint8_t lsb);
-void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
-                             icer_context_model_typedef *context_model, uint8_t lsb);
+int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, packet_context *pkt_context,
+                         output_data_buf_typedef *output_data);
+int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+                            icer_context_model_typedef *context_model,
+                            encoder_context_typedef *encoder_context,
+                            packet_context *pkt_context);
+int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt);
+int flush_encode(encoder_context_typedef *encoder_context);
 void init_context_model_vals(icer_context_model_typedef* context_model, enum icer_subband_types subband_type);
+void init_entropy_coder_context(encoder_context_typedef *encoder_context, int16_t *encode_buffer, size_t buffer_length, uint8_t *encoder_out, size_t enc_out_max);
 int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll_w, size_t ll_h, uint16_t segments);
+
+uint32_t icer_calculate_packet_crc32(image_segment_typedef *pkt);
+int icer_allocate_data_packet(image_segment_typedef **pkt, output_data_buf_typedef *output_data, uint8_t segment_num, packet_context *context);
 
 static inline uint8_t get_bit_category_uint8(const uint8_t* data, uint8_t lsb);
 static inline uint8_t get_bit_category_uint16(const uint16_t* data, uint8_t lsb);
@@ -179,6 +319,12 @@ static inline bool get_bit_significance_uint8(const uint8_t* data, uint8_t lsb);
 static inline bool get_bit_significance_uint16(const uint16_t* data, uint8_t lsb);
 static inline int8_t get_sign_uint8(const uint8_t* data, uint8_t lsb);
 static inline int8_t get_sign_uint16(const uint16_t* data, uint8_t lsb);
+
+void icer_init_output_struct(output_data_buf_typedef *out, uint8_t *data, size_t len);
+static inline uint16_t pop_buf(encoder_context_typedef *cntxt);
+static inline int alloc_buf(encoder_context_typedef *cntxt);
+static inline uint16_t* get_buf(encoder_context_typedef *cntxt, size_t ind);
+int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt);
 
 void icer_to_sign_magnitude_int8(uint8_t *data, size_t len);
 void icer_from_sign_magnitude_int8(uint8_t *data, size_t len);
@@ -188,6 +334,7 @@ static inline unsigned icer_pow_uint(unsigned base, unsigned exp);
 static inline int16_t icer_floor_div_int16(int16_t a, int16_t b);
 static inline size_t icer_floor_div_size_t(size_t a, size_t b);
 static inline int16_t icer_ceil_div_int16(int16_t a, int16_t b);
+static inline uint32_t icer_ceil_div_uint32(uint32_t a, uint32_t b);
 static inline size_t icer_ceil_div_size_t(size_t a, size_t b);
 
 static inline int icer_max_int(int a, int b);
@@ -195,8 +342,98 @@ static inline unsigned icer_max_uint(unsigned a, unsigned b);
 
 static inline int icer_min_int(int a, int b);
 
-
 size_t slice_lengths[MAX_K] = {0};
+
+#define INIT_CODING_SCHEME(bin, inp, inp_bits, out, out_bits) ({ \
+custom_coding_scheme[bin][inp].input_code_bits = inp_bits;       \
+custom_coding_scheme[bin][inp].output_code = out;                \
+custom_coding_scheme[bin][inp].output_code_bits = out_bits;      \
+})
+
+int icer_init() {
+    for (int it = 0;it <= ICER_ENCODER_BIN_MAX;it++) {
+        if (icer_bin_coding_scheme[it] > 0) {
+            unsigned int m = icer_bin_coding_scheme[it];
+            golomb_coders[it].m = m;
+
+            // compute ceil( log2( m ) )
+            unsigned int l = 31-__builtin_clz(m);
+            l += ((m ^ (1 << l)) != 0);
+
+            // compute 2^l - m
+            unsigned int i = icer_pow_uint(2, l) - m;
+
+            golomb_coders[it].i = i;
+            golomb_coders[it].l = l;
+        }
+    }
+
+    for (int it = 0;it <= ICER_ENCODER_BIN_MAX;it++) {
+        for (int j = 0;j < CUSTOM_CODING_MAX_LOOKUP;j++) custom_coding_scheme[it][j].input_code_bits = 0;
+    }
+
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2,    0b01, 2,    0b01, 2);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2,   0b011, 3,   0b110, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2,  0b0111, 4,  0b1111, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2,  0b1111, 4, 0b00001, 5);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2,    0b10, 2,    0b10, 2);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2,   0b100, 3,   0b001, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2,  0b1000, 4,  0b0001, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2, 0b00001, 5, 0b00000, 5);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2, 0b00000, 5,  0b1110, 4);
+
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3,    0b10, 2,    0b10, 2);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3,   0b100, 3,    0b00, 2);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3,  0b0000, 4,   0b110, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b00011, 5, 0b01001, 5);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b00010, 5,  0b1111, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3,    0b01, 2,   0b011, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3,  0b0011, 4,  0b1110, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3,  0b1011, 4, 0b01000, 5);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3,   0b111, 3,  0b0101, 4);
+
+    INIT_CODING_SCHEME(ICER_ENC_BIN_4,    0b10, 2,    0b01, 2);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_4,   0b100, 3,   0b110, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_4,   0b000, 3,    0b00, 2);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_4,    0b01, 2,    0b10, 2);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_4,    0b11, 2,   0b111, 3);
+
+    INIT_CODING_SCHEME(ICER_ENC_BIN_5,    0b00, 2,     0b1, 1);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_5,   0b010, 3,   0b000, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_5,   0b110, 3,  0b0101, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_5,   0b101, 3,  0b0100, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_5,  0b1001, 4,  0b0111, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_5, 0b00001, 5,  0b0010, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_5, 0b10001, 5, 0b01100, 5);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_5,   0b011, 3,  0b0011, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_5,   0b111, 3, 0b01101, 5);
+
+    INIT_CODING_SCHEME(ICER_ENC_BIN_6,     0b1, 1,    0b01, 2);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_6,   0b010, 3,   0b110, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_6,   0b110, 3,  0b1111, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_6,   0b100, 3,   0b101, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_6,  0b1000, 4,   0b100, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_6, 0b10000, 5,  0b1110, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_6, 0b00000, 5,    0b00, 2);
+
+    INIT_CODING_SCHEME(ICER_ENC_BIN_7,   0b000, 3,     0b0, 1);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_7,   0b100, 3,   0b100, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_7,   0b010, 3,   0b101, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_7,   0b110, 3, 0b11110, 5);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_7,    0b11, 2,  0b1110, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_7,   0b001, 3,   0b110, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_7,   0b101, 3, 0b11111, 5);
+
+    INIT_CODING_SCHEME(ICER_ENC_BIN_8,    0b10, 2,   0b101, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_8,   0b100, 3,   0b100, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_8,  0b0000, 4,     0b0, 1);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_8, 0b01000, 5,  0b1110, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_8, 0b11000, 5, 0b11110, 5);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_8,    0b01, 2,   0b110, 3);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_8,    0b11, 2, 0b11111, 5);
+
+    return ICER_RESULT_OK;
+}
 
 int icer_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages,
                                   enum icer_filter_types filt) {
@@ -576,8 +813,10 @@ uint8_t icer_find_k(size_t len) {
     return res;
 }
 
-void compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride,
-                              enum icer_subband_types subband_type, uint8_t lsb) {
+int16_t encode_circ_buf[2048];
+
+int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, packet_context *pkt_context,
+                             output_data_buf_typedef *output_data) {
     size_t segment_w, segment_h;
     uint8_t *segment_start;
     uint16_t segment_num = 0;
@@ -586,6 +825,8 @@ void compress_partition_uint8(uint8_t *data, partition_param_typdef *params, siz
     size_t partition_row_ind = 0;
 
     icer_context_model_typedef context_model;
+    encoder_context_typedef context;
+    image_segment_typedef *seg;
 
     /*
      * process top region which consists of c columns
@@ -608,9 +849,16 @@ void compress_partition_uint8(uint8_t *data, partition_param_typdef *params, siz
             segment_num++;
             partition_col_ind += segment_w;
 
-            init_context_model_vals(&context_model, subband_type);
+            init_context_model_vals(&context_model, pkt_context->subband_type);
             printf("t segment no: %d\n", segment_num);
-            compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, lsb);
+            if (icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
+                return ICER_BYTE_QUOTA_EXCEEDED;
+            }
+            init_entropy_coder_context(&context, encode_circ_buf, 2048, seg->data, seg->data_length);
+            if (compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
+            seg->data_length = context.output_ind + (context.output_bit_offset > 0);
+            seg->crc32 = icer_calculate_packet_crc32(seg);
+            output_data->size_used += seg->data_length;
         }
         partition_row_ind += segment_h;
     }
@@ -636,24 +884,32 @@ void compress_partition_uint8(uint8_t *data, partition_param_typdef *params, siz
             segment_num++;
             partition_col_ind += segment_w;
 
-            init_context_model_vals(&context_model, subband_type);
+            init_context_model_vals(&context_model, pkt_context->subband_type);
             printf("b segment no: %d\n", segment_num);
-            compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, lsb);
+            if (icer_allocate_data_packet(seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
+                return ICER_BYTE_QUOTA_EXCEEDED;
+            }
+            init_entropy_coder_context(&context, encode_circ_buf, 2048, seg->data, seg->data_length);
+            if (compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
+            seg->data_length = context.output_ind + (context.output_bit_offset > 0);
+            seg->crc32 = icer_calculate_packet_crc32(seg);
+            output_data->size_used += seg->data_length;
         }
         partition_row_ind += segment_h;
     }
+
+    return ICER_RESULT_OK;
 }
 
-void enc_bit(uint8_t bit, int16_t zeros, int16_t total) {
-    if (bit) printf("%1u %f\n", bit & 1, (float)zeros/(float)total);
-}
-
-void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
-                             icer_context_model_typedef *context_model, uint8_t lsb) {
+int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+                            icer_context_model_typedef *context_model,
+                            encoder_context_typedef *encoder_context,
+                            packet_context* pkt_context) {
     uint8_t *pos;
     uint8_t *rowstart = data;
     int category;
     bool bit;
+    uint8_t lsb = pkt_context->lsb;
     uint8_t mask = 0b1 << (lsb-1);
 
     uint8_t *h0, *h1, *v0, *v1, *d0, *d1, *d2, *d3;
@@ -683,7 +939,7 @@ void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size
 
             if (category == ICER_CATEGORY_3) {
                 /* pass to uncoded bin */
-
+                icer_encode_bit(encoder_context, bit, 1, 2);
             } else {
                 if (category == ICER_CATEGORY_0 || category == ICER_CATEGORY_1) {
                     h = 0;
@@ -723,15 +979,14 @@ void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size
                     cntxt = ICER_CONTEXT_11;
                 }
 
-                //todo: encode bit
-                enc_bit(bit, context_model->zero_count[cntxt], context_model->total_count[cntxt]);
+                if (icer_encode_bit(encoder_context, bit, context_model->zero_count[cntxt], context_model->total_count[cntxt]) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
 
                 context_model->total_count[cntxt]++;
-                context_model->zero_count[cntxt] += (int16_t)(!bit);
+                context_model->zero_count[cntxt] += (uint32_t)(!bit);
                 if (context_model->total_count[cntxt] >= ICER_CONTEXT_RESCALING_CAP) {
                     context_model->total_count[cntxt] >>= 1;
                     if (context_model->zero_count[cntxt] > context_model->total_count[cntxt]) context_model->zero_count[cntxt] >>= 1;
-                    else icer_ceil_div_int16(context_model->zero_count[cntxt], 2);
+                    else icer_ceil_div_uint32(context_model->zero_count[cntxt], 2);
                 }
 
                 if (category == ICER_CATEGORY_0 && bit) {
@@ -763,15 +1018,14 @@ void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size
 
                     agreement_bit = (pred_sign ^ actual_sign) & 1;
 
-                    //todo: encode sign bit
-                    enc_bit(agreement_bit, context_model->zero_count[sign_context], context_model->total_count[sign_context]);
+                    if (icer_encode_bit(encoder_context, agreement_bit, context_model->zero_count[sign_context], context_model->total_count[sign_context]) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
 
                     context_model->total_count[sign_context]++;
-                    context_model->zero_count[sign_context] += (int16_t)(agreement_bit == 0);
+                    context_model->zero_count[sign_context] += (uint32_t)(agreement_bit == 0);
                     if (context_model->total_count[sign_context] >= ICER_CONTEXT_RESCALING_CAP) {
                         context_model->total_count[sign_context] >>= 1;
                         if (context_model->zero_count[sign_context] > context_model->total_count[sign_context]) context_model->zero_count[sign_context] >>= 1;
-                        else icer_ceil_div_int16(context_model->zero_count[sign_context], 2);
+                        else icer_ceil_div_uint32(context_model->zero_count[sign_context], 2);
                     }
                 }
             }
@@ -782,6 +1036,100 @@ void compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size
         }
         rowstart += rowstride;
     }
+    return ICER_RESULT_OK;
+}
+
+int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt) {
+    uint16_t *curr_bin;
+    if (zero_cnt < (total_cnt >> 1)) {
+        /*
+         * we may assume that the probability of zero for each bit is contained
+         * the interval [1/2, 1]
+         * in the case that the probability of zero < 1/2
+         * we simple invert the bit, and its associated probability
+         * this is duplicated in the decoder
+         */
+        zero_cnt = total_cnt - zero_cnt;
+        bit = bit ^ 0b1;
+    }
+
+    int bin = icer_compute_bin(zero_cnt, total_cnt);
+    uint16_t prefix;
+    uint16_t golomb_k;
+    uint16_t bit16 = (bit != 0);
+
+    if (encoder_context->bin_current_buf[bin] == -1) {
+        encoder_context->bin_current_buf[bin] = alloc_buf(encoder_context);
+        if (encoder_context->bin_current_buf[bin] == -1) {
+            if (flush_encode(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
+            else encoder_context->bin_current_buf[bin] = alloc_buf(encoder_context);
+        }
+        curr_bin = get_buf(encoder_context, encoder_context->bin_current_buf[bin]);
+        *curr_bin = bin << ICER_ENC_BUF_BITS_OFFSET;
+    } else curr_bin = get_buf(encoder_context, encoder_context->bin_current_buf[bin]);
+
+    if (bin > ICER_ENC_BIN_8) {
+        /* golomb code bins */
+        if (!bit16) *curr_bin++;
+        if (bit16 || ((*curr_bin) & ICER_ENC_BUF_DATA_MASK) > golomb_coders[bin].m) {
+            golomb_k = (*curr_bin) & ICER_ENC_BUF_DATA_MASK;
+            *curr_bin = ((golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i)) << ICER_ENC_BUF_BITS_OFFSET);
+            *curr_bin |= ((golomb_k + (golomb_k >= golomb_coders[bin].i)) & ICER_ENC_BUF_DATA_MASK);
+            *curr_bin |= ICER_ENC_BUF_DONE_MASK;
+            encoder_context->bin_current_buf[bin] = -1;
+        }
+    } else if (bin != ICER_ENC_BIN_1) {
+        /* custom non prefix code bins */
+        *curr_bin |= (bit16 << encoder_context->bin_current_buf_bits[bin]);
+        encoder_context->bin_current_buf_bits[bin]++;
+        prefix = (*curr_bin) & ICER_ENC_BUF_DATA_MASK;
+        if (custom_coding_scheme[bin][prefix].input_code_bits == encoder_context->bin_current_buf_bits[bin]) {
+            *curr_bin = custom_coding_scheme[bin][prefix].output_code_bits << ICER_ENC_BUF_BITS_OFFSET;
+            *curr_bin |= custom_coding_scheme[bin][prefix].output_code & ICER_ENC_BUF_DATA_MASK;
+            *curr_bin |= ICER_ENC_BUF_DONE_MASK;
+            encoder_context->bin_current_buf[bin] = -1;
+            encoder_context->bin_current_buf_bits[bin] = 0;
+        }
+    } else {
+        /* uncoded bin */
+        *curr_bin |= (bit16 << encoder_context->bin_current_buf_bits[bin]);
+        encoder_context->bin_current_buf_bits[bin]++;
+        if (encoder_context->bin_current_buf_bits[bin] >= 10) {
+            *curr_bin |= (10 << ICER_ENC_BUF_BITS_OFFSET);
+            *curr_bin |= ICER_ENC_BUF_DONE_MASK;
+            encoder_context->bin_current_buf[bin] = -1;
+            encoder_context->bin_current_buf_bits[bin] = 0;
+        }
+    }
+
+    uint16_t out, bits;
+    int16_t mask;
+    uint16_t d, r;
+    int bits_to_encode;
+    while (encoder_context->used > 0 && encoder_context->encode_buffer[encoder_context->head] & ICER_ENC_BUF_DONE_MASK) {
+        out = pop_buf(encoder_context);
+        bits = out >> ICER_ENC_BUF_BITS_OFFSET;
+        out = out << (ICER_ENC_BUF_SHIFTOUT_OFFSET + (10-bits));
+        while (bits) {
+            bits_to_encode = icer_min_int(8-encoder_context->output_bit_offset, bits);
+            mask = INT16_MIN >> (bits_to_encode-1);
+            encoder_context->output_buffer[encoder_context->output_ind] |= (mask & out) >> (16-bits_to_encode);
+            bits -= bits_to_encode;
+            r = (encoder_context->output_bit_offset + bits_to_encode) / 8;
+            d = (encoder_context->output_bit_offset + bits_to_encode) % 8;
+            encoder_context->output_bit_offset = d;
+            if (r) {
+                encoder_context->output_ind += r;
+                encoder_context->output_buffer[encoder_context->output_ind] = 0;
+            }
+            if (encoder_context->output_ind == encoder_context->max_output_length) return ICER_BYTE_QUOTA_EXCEEDED;
+        }
+    }
+    return ICER_RESULT_OK;
+}
+
+int flush_encode(encoder_context_typedef *encoder_context) {
+    return ICER_RESULT_OK;
 }
 
 void init_context_model_vals(icer_context_model_typedef* context_model, enum icer_subband_types subband_type) {
@@ -790,6 +1138,26 @@ void init_context_model_vals(icer_context_model_typedef* context_model, enum ice
         context_model->zero_count[i] = ICER_DEFAULT_CONTEXT_ZERO_COUNT;
         context_model->total_count[i] = ICER_DEFAULT_CONTEXT_TOTAL_COUNT;
     }
+}
+
+void init_entropy_coder_context(encoder_context_typedef *encoder_context, int16_t *encode_buffer, size_t buffer_length, uint8_t *encoder_out, size_t enc_out_max) {
+    encoder_context->max_output_length = enc_out_max;
+    encoder_context->output_buffer = encoder_out;
+
+    encoder_context->buffer_length = buffer_length;
+    encoder_context->encode_buffer = encode_buffer;
+
+    encoder_context->head = 0;
+    encoder_context->tail = 0;
+    encoder_context->used = 0;
+
+    for (size_t it = 0;it < ICER_ENCODER_BIN_MAX+1;it++) {
+        encoder_context->bin_current_buf[it] = -1;
+        encoder_context->bin_current_buf_bits[it] = 0;
+    }
+
+    encoder_context->output_ind = 0;
+    encoder_context->output_bit_offset = 0;
 }
 
 int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll_w, size_t ll_h, uint16_t segments) {
@@ -841,6 +1209,34 @@ int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll
     return ICER_RESULT_OK;
 }
 
+uint32_t icer_calculate_packet_crc32(image_segment_typedef *pkt) {
+    return crc32buf((char*) pkt, 10);
+}
+
+int icer_allocate_data_packet(image_segment_typedef **pkt, output_data_buf_typedef *output_data, uint8_t segment_num, packet_context *context) {
+    size_t buf_len = output_data->size_allocated - output_data->size_used;
+    if (buf_len < 14) {
+        return ICER_BYTE_QUOTA_EXCEEDED;
+    }
+    (*pkt) = (image_segment_typedef *) (output_data->data_start + output_data->size_used);
+    (*pkt)->preamble = ICER_PACKET_PREAMBLE;
+    (*pkt)->subband_number = context->subband_number;
+    (*pkt)->subband_type = context->subband_type;
+    (*pkt)->segment_number = segment_num;
+    (*pkt)->lsb = context->lsb;
+    (*pkt)->ll_mean_val = context->ll_mean_val;
+    (*pkt)->crc32 = 0;
+
+    output_data->size_used += 14;
+    buf_len -= 14;
+
+    // store max data length first
+    (*pkt)->data_length = buf_len;
+    (*pkt)->data = (uint8_t *) (output_data->data_start + output_data->size_used);
+
+    return ICER_RESULT_OK;
+}
+
 static inline uint8_t get_bit_category_uint8(const uint8_t* data, uint8_t lsb) {
     return icer_min_int(__builtin_popcount(((*data) & 0x7f) >> lsb), 3);
 }
@@ -863,6 +1259,41 @@ static inline int8_t get_sign_uint8(const uint8_t* data, uint8_t lsb) {
 
 static inline int8_t get_sign_uint16(const uint16_t* data, uint8_t lsb) {
     return ((int16_t)(*data) >> 15) * (int8_t)get_bit_significance_uint16(data, lsb);
+}
+
+void icer_init_output_struct(output_data_buf_typedef *out, uint8_t *data, size_t len) {
+    out->size_used = 0;
+    out->data_start = data;
+    out->size_allocated = len;
+}
+
+static inline uint16_t pop_buf(encoder_context_typedef *cntxt) {
+    if (cntxt->used > 0) cntxt->used--;
+    uint16_t res = cntxt->encode_buffer[cntxt->head];
+    cntxt->head = (cntxt->head + 1) % cntxt->buffer_length;
+    return res;
+}
+
+static inline int alloc_buf(encoder_context_typedef *cntxt) {
+    if (cntxt->used + 1 > cntxt->buffer_length) return -1;
+    cntxt->used++;
+    int ind = cntxt->tail - cntxt->head;
+    cntxt->tail = (cntxt->tail+1) % cntxt->buffer_length;
+    return ind;
+}
+
+static inline uint16_t* get_buf(encoder_context_typedef *cntxt, size_t ind) {
+    return cntxt->encode_buffer + ((cntxt->head + ind) % cntxt->buffer_length);
+}
+
+int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt) {
+    uint32_t comp = zero_cnt * ICER_BIN_PROBABILITY_DENOMINATOR;
+    for (int16_t bin = ICER_ENCODER_BIN_MAX;bin > ICER_ENC_BIN_1;bin--) {
+        if (comp >= total_cnt * icer_bin_probability_cutoffs[bin-1]) {
+            return bin;
+        }
+    }
+    return ICER_ENC_BIN_1;
 }
 
 /* this assumes that the platform you are running the code on stores numbers as 2's complement */
@@ -893,31 +1324,32 @@ static inline unsigned icer_pow_uint(unsigned base, unsigned exp) {
     return res;
 }
 
+/* optimizes into single division, as per https://stackoverflow.com/questions/46265403/fast-floor-of-a-signed-integer-division-in-c-c */
 static inline int16_t icer_floor_div_int16(int16_t a, int16_t b) {
     int16_t d = a / b;
-    int16_t r = a %
-                b; /* optimizes into single division, as per https://stackoverflow.com/questions/46265403/fast-floor-of-a-signed-integer-division-in-c-c */
+    int16_t r = a % b;
     return r ? (d - ((a < 0) ^ (b < 0))) : d;
 }
 
 static inline size_t icer_floor_div_size_t(size_t a, size_t b) {
-    size_t d = a / b;
-    size_t r = a %
-                b; /* optimizes into single division, as per https://stackoverflow.com/questions/46265403/fast-floor-of-a-signed-integer-division-in-c-c */
-    return r ? (d - ((a < 0) ^ (b < 0))) : d;
+    return a / b;
 }
 
 static inline int16_t icer_ceil_div_int16(int16_t a, int16_t b) {
     int16_t d = a / b;
-    int16_t r = a %
-                b; /* optimizes into single division, as per https://stackoverflow.com/questions/46265403/fast-floor-of-a-signed-integer-division-in-c-c */
+    int16_t r = a % b;
+    return r ? d + 1 : d;
+}
+
+static inline uint32_t icer_ceil_div_uint32(uint32_t a, uint32_t b) {
+    uint32_t d = a / b;
+    uint32_t r = a % b;
     return r ? d + 1 : d;
 }
 
 static inline size_t icer_ceil_div_size_t(size_t a, size_t b) {
     size_t d = a / b;
-    size_t r = a %
-               b; /* optimizes into single division, as per https://stackoverflow.com/questions/46265403/fast-floor-of-a-signed-integer-division-in-c-c */
+    size_t r = a % b;
     return r ? d + 1 : d;
 }
 

@@ -7,10 +7,10 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(CMAKE_C_FLAGS "-Wall -Wextra")
+set(CMAKE_C_FLAGS_DEBUG "-g")
+set(CMAKE_C_FLAGS_RELEASE "-O2")
 
 include_directories( inc )
 
-add_executable(icer_compression src/main.c inc/icer.h src/icer.c inc/stb_image_write.h inc/stb_image.h src/stb_lib.c inc/stb_image_resize.h)
+add_executable(icer_compression src/main.c inc/icer.h src/icer.c inc/stb_image_write.h inc/stb_image.h src/stb_lib.c inc/stb_image_resize.h inc/crc.h src/crc32.c)

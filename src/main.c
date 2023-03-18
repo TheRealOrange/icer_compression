@@ -47,8 +47,8 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len, s
 }
 
 int main() {
-    const size_t out_w = 1000;
-    const size_t out_h = 1500;
+    const size_t out_w = 2000;
+    const size_t out_h = 2000;
     const size_t out_channels = 1;
 
     int src_w, src_h, n;
@@ -60,6 +60,8 @@ int main() {
     int res = 0;
     clock_t begin, end;
 
+    icer_init();
+
     printf("test compression code\n");
 
     printf("loading image: \"%s\"\n", filename);
@@ -69,9 +71,9 @@ int main() {
         return 0;
     }
 
-    printf("loaded image\nwidth    : %5d\nheight   : %5d\nchannels : %5d\nout_chn  : %5d\n", src_w, src_h, n, out_channels);
+    printf("loaded image\nwidth    : %5d\nheight   : %5d\nchannels : %5d\nout_chn  : %5zu\n", src_w, src_h, n, out_channels);
 
-    printf("resizing image to width: %4d, height: %4d\n", out_w, out_h);
+    printf("resizing image to width: %4zu, height: %4zu\n", out_w, out_h);
     res = stbir_resize_uint8(data, src_w, src_h, 0,
                              resized, out_w, out_h, 0,
                              out_channels);
@@ -112,11 +114,25 @@ int main() {
 
     uint8_t *datastart = transformed + icer_ceil_div_size_t(out_w, 2);
     partition_param_typdef partition;
-    icer_generate_partition_parameters(&partition, icer_floor_div_size_t(out_w, 2), icer_ceil_div_size_t(out_h, 2), 20);
+    packet_context pkt_context;
+    uint8_t *output_data = malloc(500);
+    output_data_buf_typedef output;
+    icer_init_output_struct(&output, output_data, 500);
+    icer_generate_partition_parameters(&partition, icer_floor_div_size_t(out_w, 2), icer_ceil_div_size_t(out_h, 2), 2);
     for (int i = 0;i < 7;i++) {
         printf("lsb: %2d\n", i);
-        compress_partition_uint8(datastart, &partition, out_w, ICER_SUBBAND_HL, i);
+        pkt_context.lsb = i;
+        pkt_context.subband_type = ICER_SUBBAND_HL;
+        pkt_context.ll_mean_val = 0;
+        pkt_context.subband_number = 0;
+        compress_partition_uint8(datastart, &partition, out_w, &pkt_context, &output);
     }
+
+    printf("output size: %zu bytes\n", output.size_used);
+    for (size_t i = 0;i < output.size_used;i++) {
+        printf("0x%02x ", output.data_start[i]);
+    }
+    printf("\n");
 
     printf("saving wavelet transformed image to: \"%s\"\n", wavelet_filename);
     res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, transformed);
@@ -174,6 +190,16 @@ int main() {
             printf("%s\n\n", stri);
         }
     }*/
+    /*
+    for (int i = 1;i <= 512;i++) {
+        int leading = 31-__builtin_clz(i|1);
+        printf("log2 %d = %d\n", i, leading + ((i ^ (1 << leading)) != 0));
+    }*/
+
+    printf("%d\n", INT16_MIN >> 1);
+    if ((INT16_MIN >> 1) == (int16_t)0b1100000000000000) {
+        printf("reeee\n");
+    }
 
     return 0;
 }
