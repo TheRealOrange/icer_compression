@@ -14,7 +14,7 @@
 #define __builtin_clz __clz
 
 uint32_t __inline __clz( uint32_t value ) {
-    DWORD leading_zero = 0;
+    uint32_t leading_zero = 0;
 
     if ( _BitScanReverse( &leading_zero, value ) ) {
        return 31 - leading_zero;
