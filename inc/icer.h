@@ -29,12 +29,13 @@ uint32_t __inline __clz( uint32_t value ) {
 
 enum icer_status {
     ICER_RESULT_OK = 0,
-    ICER_INTEGER_OVERFLOW = 1,
-    ICER_SIZE_ERROR = 2,
-    ICER_TOO_MANY_SEGMENTS = 3,
-    ICER_TOO_MANY_STAGES = 4,
-    ICER_BYTE_QUOTA_EXCEEDED = 5,
-    ICER_BITPLANE_OUT_OF_RANGE
+    ICER_INTEGER_OVERFLOW = -1,
+    ICER_SIZE_ERROR = -2,
+    ICER_TOO_MANY_SEGMENTS = -3,
+    ICER_TOO_MANY_STAGES = -4,
+    ICER_BYTE_QUOTA_EXCEEDED = -5,
+    ICER_BITPLANE_OUT_OF_RANGE = -6,
+    ICER_DECODER_OUT_OF_DATA = -7
 };
 
 enum icer_filter_types {
@@ -311,11 +312,13 @@ typedef struct {
 typedef struct {
     size_t decoded_words;
     size_t encode_ind;
-    uint8_t bit_offset;
+    uint8_t encode_bit_offset;
+    uint32_t encoded_bits_total;
+    uint32_t decoded_bits_total;
     uint8_t *encoded_words;
-    int16_t bin_current_buf[ICER_ENCODER_BIN_MAX+1];
-    int16_t bin_current_buf_bits[ICER_ENCODER_BIN_MAX+1];
-    int16_t bin_decode_index[ICER_ENCODER_BIN_MAX+1];
+    int32_t bin_buf[ICER_ENCODER_BIN_MAX+1][64];
+    int32_t bin_bits[ICER_ENCODER_BIN_MAX+1];
+    int32_t bin_decode_index[ICER_ENCODER_BIN_MAX+1];
 } decoder_context_typedef;
 
 int icer_init();
@@ -1301,7 +1304,7 @@ int icer_popbuf_while_avail(encoder_context_typedef *encoder_context) {
         while (bits) {
             bits_to_encode = icer_min_int(8-encoder_context->output_bit_offset, bits);
             //mask = INT16_MIN >> (bits_to_encode-1);
-            encoder_context->output_buffer[encoder_context->output_ind] |= (out & ((1 << bits_to_encode) - 1)) << encoder_context->output_bit_offset;
+            encoder_context->output_buffer[encoder_context->output_ind] |= (out & ((1 << bits_to_encode) - 1)) << (8-encoder_context->output_bit_offset-bits_to_encode);
             out >>= bits_to_encode;
             bits -= bits_to_encode;
             r = (encoder_context->output_bit_offset + bits_to_encode) / 8;
@@ -1393,9 +1396,31 @@ int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint3
     return ICER_RESULT_OK;
 }
 
+int icer_get_bits_from_codeword(decoder_context_typedef *decoder_context, uint8_t bits) {
+    int num = 0;
+    int bits_to_decode= 0;
+    uint8_t bitoffset = decoder_context->encode_bit_offset;
+    size_t ind = decoder_context->encode_ind;
+    while (bits) {
+        bits_to_decode = icer_min_int(bitoffset, bits);
+
+        if (decoder_context->decoded_bits_total + bits_to_decode > decoder_context->encoded_bits_total) {
+            return ICER_DECODER_OUT_OF_DATA;
+        }
+
+        bits -= bits_to_decode;
+        num |= (decoder_context->encoded_words[ind] & ((1 << bits_to_decode) - 1)) << bits;
+        bitoffset -= bits_to_decode;
+        if (bitoffset == 0) {
+            ind++;
+            bitoffset = 7;
+        }
+    }
+    return num;
+}
+
 int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint32_t zero_cnt, uint32_t total_cnt) {
-    uint16_t *curr_bin;
-    bool inv = false;
+    bool inv = false, b;
     if (zero_cnt < (total_cnt >> 1)) {
         /*
          * we may assume that the probability of zero for each bit is contained
@@ -1410,18 +1435,22 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
 
     int bin = icer_compute_bin(zero_cnt, total_cnt);
 
-    if (bin > ICER_ENC_BIN_8) {
-        /* golomb code bins */
+    if (decoder_context->bin_bits <= 0) {
+        /* ran out of bits in the bit, time to process a new codeword */
+        if (bin > ICER_ENC_BIN_8) {
+            /* golomb code bins */
 
-    } else if (bin != ICER_ENC_BIN_1) {
-        /* custom non prefix code bins */
+        } else if (bin != ICER_ENC_BIN_1) {
+            /* custom non prefix code bins */
 
-    } else {
-        /* uncoded bin */
+        } else {
+            /* uncoded bin */
 
+        }
     }
 
-    //if (icer_popbuf_while_avail(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
+    b = (decoder_context->bin_buf[bin][decoder_context->bin_decode_index[bin]] & (1 << decoder_context->bin_bits[bin])) != 0;
+    (*bit) = inv == !b;
     return ICER_RESULT_OK;
 }
 
