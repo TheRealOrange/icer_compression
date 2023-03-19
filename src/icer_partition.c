@@ -52,7 +52,6 @@ int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll
 
     return ICER_RESULT_OK;
 }
-uint16_t encode_circ_buf[2048];
 
 int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, packet_context *pkt_context,
                              output_data_buf_typedef *output_data) {

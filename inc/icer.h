@@ -25,7 +25,7 @@ uint32_t __inline __clz( uint32_t value ) {
 }
 #endif
 
-
+#define ICER_CIRC_BUF_SIZE 2048
 #define MAX_K 12
 
 enum icer_status {
@@ -181,6 +181,7 @@ typedef struct {
 
 #define CUSTOM_CODING_MAX_LOOKUP 32
 custom_code_typedef custom_coding_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
+custom_code_typedef custom_decode_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
 
 #define CUSTOM_CODE_FLUSH_MAX_LOOKUP 8
 #define MAX_NUM_BITS_BEFORE_FLUSH    5
@@ -248,6 +249,10 @@ typedef struct {
 } decoder_context_typedef;
 
 int icer_init();
+void icer_init_decodescheme();
+void icer_init_condingscheme();
+void icer_init_flushbits();
+void icer_init_golombcoder();
 
 int icer_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
 int icer_inverse_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
@@ -275,6 +280,10 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
 
 int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt);
 int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint32_t zero_cnt, uint32_t total_cnt);
+
+int icer_get_bit_from_codeword(decoder_context_typedef *decoder_context, uint8_t bits);
+int icer_get_bits_from_codeword(decoder_context_typedef *decoder_context, uint8_t bits);
+int icer_pop_bits_from_codeword(decoder_context_typedef *decoder_context, uint8_t bits);
 
 int icer_popbuf_while_avail(encoder_context_typedef *encoder_context);
 int flush_encode(encoder_context_typedef *encoder_context);
@@ -306,7 +315,7 @@ static inline int icer_min_int(int a, int b);
 
 extern size_t slice_lengths[MAX_K];
 
-
+extern uint16_t encode_circ_buf[ICER_CIRC_BUF_SIZE];
 
 static inline unsigned icer_pow_uint(unsigned base, unsigned exp) {
     unsigned res = 1;

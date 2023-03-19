@@ -4,6 +4,8 @@
 
 #include "icer.h"
 
+uint16_t encode_circ_buf[ICER_CIRC_BUF_SIZE];
+
 static inline uint16_t pop_buf(encoder_context_typedef *cntxt);
 static inline int16_t alloc_buf(encoder_context_typedef *cntxt);
 
@@ -112,7 +114,7 @@ int icer_popbuf_while_avail(encoder_context_typedef *encoder_context) {
         while (bits) {
             bits_to_encode = icer_min_int(8-encoder_context->output_bit_offset, bits);
             //mask = INT16_MIN >> (bits_to_encode-1);
-            encoder_context->output_buffer[encoder_context->output_ind] |= (out & ((1 << bits_to_encode) - 1)) << (8-encoder_context->output_bit_offset-bits_to_encode);
+            encoder_context->output_buffer[encoder_context->output_ind] |= (out & ((1 << bits_to_encode) - 1)) << (encoder_context->output_bit_offset);
             out >>= bits_to_encode;
             bits -= bits_to_encode;
             r = (encoder_context->output_bit_offset + bits_to_encode) / 8;
@@ -193,7 +195,7 @@ static inline uint16_t pop_buf(encoder_context_typedef *cntxt) {
 }
 
 static inline int16_t alloc_buf(encoder_context_typedef *cntxt) {
-    if (cntxt->used+1 >= cntxt->buffer_length) return -1;
+    if (cntxt->used >= cntxt->buffer_length) return -1;
     cntxt->used++;
     int16_t ind = (int16_t)cntxt->tail;
     cntxt->tail = (cntxt->tail+1) % cntxt->buffer_length;
