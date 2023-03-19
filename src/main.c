@@ -115,22 +115,27 @@ int main() {
     uint8_t *datastart = transformed + icer_ceil_div_size_t(out_w, 2);
     partition_param_typdef partition;
     packet_context pkt_context;
-    uint8_t *output_data = malloc(500);
+    uint8_t *output_data = malloc(500000);
     output_data_buf_typedef output;
-    icer_init_output_struct(&output, output_data, 500);
-    icer_generate_partition_parameters(&partition, icer_floor_div_size_t(out_w, 2), icer_ceil_div_size_t(out_h, 2), 2);
+    icer_init_output_struct(&output, output_data, 500000);
+    icer_generate_partition_parameters(&partition, icer_floor_div_size_t(out_w, 2), icer_ceil_div_size_t(out_h, 2), 1);
     for (int i = 0;i < 7;i++) {
         printf("lsb: %2d\n", i);
         pkt_context.lsb = i;
         pkt_context.subband_type = ICER_SUBBAND_HL;
         pkt_context.ll_mean_val = 0;
         pkt_context.subband_number = 0;
-        compress_partition_uint8(datastart, &partition, out_w, &pkt_context, &output);
+        if (compress_partition_uint8(datastart, &partition, out_w, &pkt_context, &output) == ICER_BYTE_QUOTA_EXCEEDED){
+            printf("byte quota exceeded\n");
+            break;
+        }
+        printf("output size: %zu bytes\n", output.size_used);
     }
 
+    printf("total size: %zu bytes\n", output.size_allocated);
     printf("output size: %zu bytes\n", output.size_used);
     for (size_t i = 0;i < output.size_used;i++) {
-        printf("0x%02x ", output.data_start[i]);
+        //printf("0x%02x ", output.data_start[i]);
     }
     printf("\n");
 
