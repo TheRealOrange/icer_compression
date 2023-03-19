@@ -3,6 +3,13 @@
 //
 #include "icer.h"
 
+custom_code_typedef custom_coding_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
+custom_code_typedef custom_decode_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
+
+custom_flush_typedef custom_code_flush_bits[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODE_FLUSH_MAX_LOOKUP+1][MAX_NUM_BITS_BEFORE_FLUSH+1];
+
+golomb_code_typedef golomb_coders[ICER_ENCODER_BIN_MAX+1];
+
 const int16_t icer_wavelet_filter_parameters[][4] = {{0,  4, 4, 0},
                                                      {0,  4, 6, 4},
                                                      {-1, 4, 8, 6},

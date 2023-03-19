@@ -180,12 +180,12 @@ typedef struct {
 } custom_flush_typedef;
 
 #define CUSTOM_CODING_MAX_LOOKUP 32
-custom_code_typedef custom_coding_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
-custom_code_typedef custom_decode_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
+extern custom_code_typedef custom_coding_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
+extern custom_code_typedef custom_decode_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
 
 #define CUSTOM_CODE_FLUSH_MAX_LOOKUP 8
 #define MAX_NUM_BITS_BEFORE_FLUSH    5
-custom_flush_typedef custom_code_flush_bits[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODE_FLUSH_MAX_LOOKUP+1][MAX_NUM_BITS_BEFORE_FLUSH+1];
+extern custom_flush_typedef custom_code_flush_bits[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODE_FLUSH_MAX_LOOKUP+1][MAX_NUM_BITS_BEFORE_FLUSH+1];
 
 typedef struct {
     uint16_t m;
@@ -193,7 +193,7 @@ typedef struct {
     uint16_t i;
 } golomb_code_typedef;
 
-golomb_code_typedef golomb_coders[ICER_ENCODER_BIN_MAX+1];
+extern golomb_code_typedef golomb_coders[ICER_ENCODER_BIN_MAX+1];
 
 typedef struct {
     uint16_t subband_number;
