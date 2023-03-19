@@ -198,6 +198,7 @@ int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, siz
             if (category == ICER_CATEGORY_3) {
                 /* pass to uncoded bin */
                 icer_decode_bit(decoder_context, &bit, 1, 2);
+                (*pos) |= bit << lsb;
             } else {
                 if (category == ICER_CATEGORY_0 || category == ICER_CATEGORY_1) {
                     h = 0;
@@ -238,6 +239,7 @@ int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, siz
                 }
 
                 icer_decode_bit(decoder_context, &bit, context_model->zero_count[cntxt], context_model->total_count[cntxt]);
+                (*pos) |= bit << lsb;
 
                 context_model->total_count[cntxt]++;
                 context_model->zero_count[cntxt] += (uint32_t)(!bit);

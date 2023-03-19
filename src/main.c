@@ -29,14 +29,11 @@ void increase_bit_depth(unsigned char *buf, size_t len, uint8_t bits) {
     }
 }
 
-bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len, size_t w) {
+bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
     bool identical = true;
     size_t cnt = 0;
     for (size_t it = 0;it < len;it++) {
         if (buf1[it] != buf2[it]) {
-            size_t row = it / w;
-            size_t col = it % w;
-            //printf("diff at %4zu: src=%3d dst=%3d row=%3d col=%3d\n", it, buf1[it], buf2[it], row, col);
             cnt++;
             identical = false;
         }
@@ -133,11 +130,39 @@ int main() {
         }
 
         image_segment_typedef *seg = (image_segment_typedef*)output_data;
-        decompress_partition_uint8(decoded, &partition, out_w, &pkt_context, seg);
+        decompress_partition_uint8(decoded, &partition, 1000, &pkt_context, seg);
 
         printf("output size: %zu bytes\n", output.size_used);
 
     }
+    compare(datastart, decoded, 800*800);
+    stbi_write_bmp("../aaah.bmp", 1000, 1000, 1, decoded);
+
+    int prob_a[17] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+    int prob_b = 10;
+
+    uint8_t bits[17] = { 0 };
+    uint16_t circ_buf[ICER_CIRC_BUF_SIZE];
+    uint8_t *out_bits = malloc(1000);
+    encoder_context_typedef enc;
+    decoder_context_typedef dec;
+
+    init_entropy_coder_context(&enc, circ_buf, ICER_CIRC_BUF_SIZE, out_bits, 1000);
+    for (int i = 0;i < 17;i++) {
+        icer_encode_bit(&enc, bits[i], prob_a[i], prob_b);
+        printf("%d ", bits[i]);
+    }
+    printf("\n");
+
+    uint32_t num_bits = enc.output_ind * 8 + enc.output_bit_offset;
+    init_entropy_decoder_context(&dec, out_bits, num_bits);
+
+    uint8_t code_bits;
+    for (int i = 0;i < 17;i++) {
+        icer_decode_bit(&dec, &code_bits, prob_a[i], prob_b);
+        printf("%d ", code_bits);
+    }
+    printf("\n");
 
     printf("total size: %zu bytes\n", output.size_allocated);
     printf("output size: %zu bytes\n", output.size_used);
@@ -170,7 +195,7 @@ int main() {
     }
 
 
-    if (compare(transformed, resized, out_w*out_h*out_channels, out_w)) {
+    if (compare(transformed, resized, out_w*out_h*out_channels)) {
         printf("result is identical\n");
     } else {
         printf("result is different\n");

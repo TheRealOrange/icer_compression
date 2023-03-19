@@ -252,7 +252,7 @@ typedef struct {
 
 int icer_init();
 void icer_init_decodescheme();
-void icer_init_condingscheme();
+void icer_init_codingscheme();
 void icer_init_flushbits();
 void icer_init_golombcoder();
 

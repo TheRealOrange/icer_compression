@@ -169,7 +169,7 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
         decoder_context->bin_decode_index[bin] = decoder_context->decoded_words;
     }
 
-    b = (decoder_context->bin_buf[bin][decoder_context->bin_decode_index[bin]] & (1 << decoder_context->bin_bits[bin])) != 0;
+    b = (decoder_context->bin_buf[bin][decoder_context->bin_decode_index[bin]] & (1 << (decoder_context->bin_bits[bin]-1))) != 0;
     decoder_context->bin_buf[bin][decoder_context->bin_decode_index[bin]] &= ~(1 << decoder_context->bin_bits[bin]);
     (*bit) = inv == !b;
     return ICER_RESULT_OK;

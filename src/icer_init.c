@@ -23,7 +23,7 @@ custom_decode_scheme[bin][inp].output_code_bits = out_bits;      \
 
 int icer_init() {
     icer_init_golombcoder();
-    icer_init_condingscheme();
+    icer_init_codingscheme();
     icer_init_decodescheme();
     icer_init_flushbits();
 
@@ -32,7 +32,10 @@ int icer_init() {
 
 void icer_init_decodescheme() {
     for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
-        for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) custom_decode_scheme[it][j].input_code_bits = 0;
+        for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) {
+            custom_decode_scheme[it][j].input_code_bits = 0;
+            custom_decode_scheme[it][j].output_code_bits = 0;
+        }
     }
 
     INIT_DECODE_SCHEME(ICER_ENC_BIN_2, 0b01, 2, 0b10, 2);
@@ -94,9 +97,23 @@ void icer_init_decodescheme() {
     INIT_DECODE_SCHEME(ICER_ENC_BIN_8, 0b11000, 5, 0b01111, 5);
     INIT_DECODE_SCHEME(ICER_ENC_BIN_8, 0b01, 2, 0b011, 3);
     INIT_DECODE_SCHEME(ICER_ENC_BIN_8, 0b11, 2, 0b11111, 5);
+
+    for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
+        for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) {
+            if (custom_decode_scheme[it][j].output_code_bits != 0) {
+                uint8_t reversed = 0;
+                for (int b = 0; b < custom_decode_scheme[it][j].output_code_bits;b++) {
+                    reversed |= custom_decode_scheme[it][j].output_code & 1;
+                    reversed <<= 1;
+                    custom_decode_scheme[it][j].output_code >>= 1;
+                }
+                custom_decode_scheme[it][j].output_code = reversed;
+            }
+        }
+    }
 }
 
-void icer_init_condingscheme() {
+void icer_init_codingscheme() {
     for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
         for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) custom_coding_scheme[it][j].input_code_bits = 0;
     }
