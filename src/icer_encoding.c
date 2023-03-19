@@ -206,7 +206,7 @@ static inline int16_t alloc_buf(encoder_context_typedef *cntxt) {
 
 int icer_allocate_data_packet(image_segment_typedef **pkt, output_data_buf_typedef *output_data, uint8_t segment_num, packet_context *context) {
     size_t buf_len = output_data->size_allocated - output_data->size_used;
-    if (buf_len < 16) {
+    if (buf_len < sizeof(image_segment_typedef)) {
         return ICER_BYTE_QUOTA_EXCEEDED;
     }
     (*pkt) = (image_segment_typedef *) (output_data->data_start + output_data->size_used);
@@ -218,12 +218,11 @@ int icer_allocate_data_packet(image_segment_typedef **pkt, output_data_buf_typed
     (*pkt)->ll_mean_val = context->ll_mean_val;
     (*pkt)->crc32 = 0;
 
-    output_data->size_used += 16;
-    buf_len -= 16;
+    output_data->size_used += sizeof(image_segment_typedef);
+    buf_len -= sizeof(image_segment_typedef);
 
     // store max data length first
     (*pkt)->data_length = buf_len;
-    (*pkt)->data = (uint8_t *) (output_data->data_start + output_data->size_used);
 
     return ICER_RESULT_OK;
 }

@@ -132,9 +132,9 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
                 icer_pop_bits_from_codeword(decoder_context, 1);
                 icer_push_bin_bits(decoder_context, bin, 0b0, golomb_coders[bin].m);
             } else {
-                golomb_k = icer_get_bit_from_codeword(decoder_context, golomb_coders[bin].i);
+                golomb_k = icer_get_bit_from_codeword(decoder_context, golomb_coders[bin].l);
                 if (golomb_k < golomb_coders[bin].i) {
-                    golomb_k = icer_pop_bits_from_codeword(decoder_context, golomb_coders[bin].i + 1);
+                    golomb_k = icer_pop_bits_from_codeword(decoder_context, golomb_coders[bin].l + 1);
                     icer_push_bin_bits(decoder_context, bin, 0b0, golomb_k - golomb_coders[bin].i);
                     icer_push_bin_bits(decoder_context, bin, 0b1, 1);
                 }

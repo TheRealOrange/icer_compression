@@ -214,7 +214,6 @@ typedef struct {
     uint8_t ll_mean_val;
     uint32_t data_length; // store data length in bits for the decoder
     uint32_t crc32;
-    uint8_t *data;
 } image_segment_typedef;
 
 typedef struct {
@@ -275,7 +274,7 @@ uint8_t icer_find_k(size_t len);
 
 
 int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, packet_context *pkt_context,
-                         output_data_buf_typedef *output_data);
+                             output_data_buf_typedef *output_data);
 int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                             icer_context_model_typedef *context_model,
                             encoder_context_typedef *encoder_context,
