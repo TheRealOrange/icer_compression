@@ -112,6 +112,7 @@ int main() {
         printf("overflow\n");
     }
 
+    uint8_t *decoded = malloc(out_w*out_h);
     uint8_t *datastart = transformed + icer_ceil_div_size_t(out_w, 2);
     partition_param_typdef partition;
     packet_context pkt_context;
@@ -119,7 +120,7 @@ int main() {
     output_data_buf_typedef output;
     icer_init_output_struct(&output, output_data, 500000);
     icer_generate_partition_parameters(&partition, icer_floor_div_size_t(out_w, 2), icer_ceil_div_size_t(out_h, 2), 1);
-    for (int i = 0;i < 7;i++) {
+    for (int i = 7;i >= 0;i--) {
         printf("lsb: %2d\n", i);
         pkt_context.lsb = i;
         pkt_context.subband_type = ICER_SUBBAND_HL;
@@ -129,7 +130,12 @@ int main() {
             printf("byte quota exceeded\n");
             break;
         }
+
+        image_segment_typedef *seg = (image_segment_typedef*)output_data;
+        //decompress_partition_uint8(decoded, &partition, out_w, &pkt_context, seg);
+
         printf("output size: %zu bytes\n", output.size_used);
+
     }
 
     printf("total size: %zu bytes\n", output.size_allocated);

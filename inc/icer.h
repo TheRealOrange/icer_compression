@@ -36,7 +36,8 @@ enum icer_status {
     ICER_TOO_MANY_STAGES = -4,
     ICER_BYTE_QUOTA_EXCEEDED = -5,
     ICER_BITPLANE_OUT_OF_RANGE = -6,
-    ICER_DECODER_OUT_OF_DATA = -7
+    ICER_DECODER_OUT_OF_DATA = -7,
+    ICER_DECODED_INVALID_DATA = -8
 };
 
 enum icer_filter_types {
@@ -236,6 +237,8 @@ typedef struct {
     int16_t bin_current_buf_bits[ICER_ENCODER_BIN_MAX+1];
 } encoder_context_typedef;
 
+#define ICER_DECODER_BIT_BIN_MAX 30
+
 typedef struct {
     size_t decoded_words;
     size_t encode_ind;
@@ -243,9 +246,9 @@ typedef struct {
     uint32_t encoded_bits_total;
     uint32_t decoded_bits_total;
     uint8_t *encoded_words;
-    int32_t bin_buf[ICER_ENCODER_BIN_MAX+1][64];
+    uint32_t bin_buf[ICER_ENCODER_BIN_MAX+1][ICER_DECODER_BIT_BIN_MAX];
     int32_t bin_bits[ICER_ENCODER_BIN_MAX+1];
-    int32_t bin_decode_index[ICER_ENCODER_BIN_MAX+1];
+    size_t bin_decode_index[ICER_ENCODER_BIN_MAX+1];
 } decoder_context_typedef;
 
 int icer_init();
@@ -277,6 +280,15 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
                             icer_context_model_typedef *context_model,
                             encoder_context_typedef *encoder_context,
                             packet_context *pkt_context);
+
+int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, packet_context *pkt_context,
+                               image_segment_typedef *seg);
+int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+                              icer_context_model_typedef *context_model,
+                              decoder_context_typedef *decoder_context,
+                              packet_context* pkt_context);
+
+void init_entropy_decoder_context(decoder_context_typedef *decoder_context, uint8_t *encoded_words, size_t encoded_bits);
 
 int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt);
 int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint32_t zero_cnt, uint32_t total_cnt);

@@ -4,8 +4,40 @@
 
 #include "icer.h"
 
+#define ICER_BITMASK_MACRO(x) (((unsigned)1 << x) - 1)
+
+void init_entropy_decoder_context(decoder_context_typedef *decoder_context, uint8_t *encoded_words, size_t encoded_bits) {
+    decoder_context->encoded_bits_total = encoded_bits;
+    decoder_context->decoded_bits_total = 0;
+    decoder_context->decoded_words = 0;
+
+    decoder_context->encoded_words = encoded_words;
+    decoder_context->encode_bit_offset = 0;
+    decoder_context->encode_ind = 0;
+
+    for (size_t it = 0;it < ICER_ENCODER_BIN_MAX+1;it++) {
+        decoder_context->bin_bits[it] = 0;
+        decoder_context->bin_decode_index[it] = 0;
+        for (size_t j = 0;j < ICER_DECODER_BIT_BIN_MAX;j++) decoder_context->bin_buf[it][j] = 0;
+    }
+}
+
 void icer_push_bin_bits(decoder_context_typedef *decoder_context, uint8_t bin, uint16_t bits, uint16_t num_bits) {
-    return;
+    int32_t bin_ind, bin_bit_offset;
+    bin_ind = decoder_context->bin_bits[bin] / 32;
+    bin_bit_offset = decoder_context->bin_bits[bin] % 32;
+    decoder_context->bin_bits[bin] += num_bits;
+
+    int bits_to_push;
+    while (num_bits) {
+        bits_to_push = icer_min_int(num_bits, 32-bin_bit_offset);
+        decoder_context->bin_buf[bin][bin_ind] |= ((bits & ICER_BITMASK_MACRO(bits_to_push)) << bin_bit_offset);
+        num_bits -= bits_to_push;
+
+        bin_bit_offset += bits_to_push;
+        bin_ind += bin_bit_offset / 32;
+        bin_bit_offset %= 32;
+    }
 }
 
 int icer_get_bit_from_codeword(decoder_context_typedef *decoder_context, uint8_t bits) {
@@ -16,6 +48,7 @@ int icer_get_bit_from_codeword(decoder_context_typedef *decoder_context, uint8_t
     r = bitoffset / 8;
     d = bitoffset % 8;
     ind += r;
+    bitoffset = d;
 
     return (decoder_context->encoded_words[ind] & (1 << bitoffset)) >> bitoffset;
 }
@@ -27,11 +60,12 @@ int icer_get_bits_from_codeword(decoder_context_typedef *decoder_context, uint8_
     size_t ind = decoder_context->encode_ind;
     uint16_t d, r;
     while (bits) {
-        bits_to_decode = icer_min_int(bitoffset, bits);
+        bits_to_decode = icer_min_int(8-bitoffset, bits);
         if (decoder_context->decoded_bits_total + bits_to_decode > decoder_context->encoded_bits_total) {
             return ICER_DECODER_OUT_OF_DATA;
         }
-        num |= ((decoder_context->encoded_words[ind] & (((1 << bits_to_decode) - 1) << bitoffset)) >> bitoffset) << decoded;
+        num |= (int)((((decoder_context->encoded_words[ind] & (ICER_BITMASK_MACRO(bits_to_decode)) << bitoffset)) >> bitoffset) << decoded);
+        bits -= bits_to_decode;
         decoded += bits_to_decode;
         bitoffset += bits_to_decode;
         r = bitoffset / 8;
@@ -49,11 +83,12 @@ int icer_pop_bits_from_codeword(decoder_context_typedef *decoder_context, uint8_
     int bits_to_decode, decoded = 0;
     uint16_t d, r;
     while (bits) {
-        bits_to_decode = icer_min_int(decoder_context->encode_bit_offset, bits);
+        bits_to_decode = icer_min_int(8-decoder_context->encode_bit_offset, bits);
         if (decoder_context->decoded_bits_total + bits_to_decode > decoder_context->encoded_bits_total) {
             return ICER_DECODER_OUT_OF_DATA;
         }
-        num |= ((decoder_context->encoded_words[decoder_context->encode_ind] & (((1 << bits_to_decode) - 1) << decoder_context->encode_bit_offset)) >> decoder_context->encode_bit_offset) << decoded;
+        num |= (int)(((decoder_context->encoded_words[decoder_context->encode_ind] & (ICER_BITMASK_MACRO(bits_to_decode) << decoder_context->encode_bit_offset)) >> decoder_context->encode_bit_offset) << decoded);
+        bits -= bits_to_decode;
         decoded += bits_to_decode;
         decoder_context->encode_bit_offset += bits_to_decode;
         r = decoder_context->encode_bit_offset / 8;
@@ -68,8 +103,9 @@ int icer_pop_bits_from_codeword(decoder_context_typedef *decoder_context, uint8_
 
 int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint32_t zero_cnt, uint32_t total_cnt) {
     bool inv = false, b;
-    uint8_t code_bit;
-    uint8_t num_bits = 0;
+    int code_bit;
+    uint16_t codeword;
+    uint8_t num_bits;
     uint16_t golomb_k;
     if (zero_cnt < (total_cnt >> 1)) {
         /*
@@ -85,24 +121,56 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
 
     int bin = icer_compute_bin(zero_cnt, total_cnt);
 
-    if (decoder_context->bin_bits[bin] <= 0) {
+    if (decoder_context->bin_bits[bin] <= 0 || decoder_context->decoded_words - decoder_context->bin_decode_index[bin] >= ICER_CIRC_BUF_SIZE) {
         /* ran out of bits in the bit, time to process a new codeword */
         if (bin > ICER_ENC_BIN_8) {
             /* golomb code bins */
-            icer_get_bit_from_codeword(decoder_context, 1);
+            code_bit = icer_get_bit_from_codeword(decoder_context, 1);
+            if (code_bit == ICER_DECODER_OUT_OF_DATA) return ICER_DECODER_OUT_OF_DATA; //major oops moment
             if (code_bit) {
-
+                /* if the first bit is one, return m 0s */
+                icer_pop_bits_from_codeword(decoder_context, 1);
+                icer_push_bin_bits(decoder_context, bin, 0b0, golomb_coders[bin].m);
+            } else {
+                golomb_k = icer_get_bit_from_codeword(decoder_context, golomb_coders[bin].i);
+                if (golomb_k < golomb_coders[bin].i) {
+                    golomb_k = icer_pop_bits_from_codeword(decoder_context, golomb_coders[bin].i + 1);
+                    icer_push_bin_bits(decoder_context, bin, 0b0, golomb_k - golomb_coders[bin].i);
+                    icer_push_bin_bits(decoder_context, bin, 0b1, 1);
+                }
             }
         } else if (bin != ICER_ENC_BIN_1) {
             /* custom non prefix code bins */
-
+            codeword = 0;
+            num_bits = 0;
+            do {
+                if (decoder_context->decoded_bits_total + num_bits + 1 >= decoder_context->encoded_bits_total) return ICER_DECODER_OUT_OF_DATA;
+                codeword |= icer_get_bit_from_codeword(decoder_context, 1) << num_bits;
+                num_bits++;
+                if (codeword < 32) {
+                    if (custom_decode_scheme[bin][codeword].input_code_bits == num_bits) {
+                        icer_push_bin_bits(decoder_context, bin, custom_decode_scheme[bin][codeword].output_code, custom_decode_scheme[bin][codeword].output_code_bits);
+                        if (codeword != icer_pop_bits_from_codeword(decoder_context, num_bits)) {
+                            return ICER_DECODED_INVALID_DATA;
+                        }
+                    }
+                } else {
+                    return ICER_DECODED_INVALID_DATA;
+                }
+            } while (num_bits < 10);
         } else {
             /* uncoded bin */
-
+            code_bit = icer_pop_bits_from_codeword(decoder_context, 1);
+            if (code_bit == ICER_DECODER_OUT_OF_DATA) return ICER_DECODER_OUT_OF_DATA;
+            icer_push_bin_bits(decoder_context, bin, code_bit != 0, 1);
         }
+
+        decoder_context->decoded_words++;
+        decoder_context->bin_decode_index[bin] = decoder_context->decoded_words;
     }
 
     b = (decoder_context->bin_buf[bin][decoder_context->bin_decode_index[bin]] & (1 << decoder_context->bin_bits[bin])) != 0;
+    decoder_context->bin_buf[bin][decoder_context->bin_decode_index[bin]] &= ~(1 << decoder_context->bin_bits[bin]);
     (*bit) = inv == !b;
     return ICER_RESULT_OK;
 }

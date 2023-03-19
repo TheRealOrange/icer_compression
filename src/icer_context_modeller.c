@@ -129,7 +129,7 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
 
                     sign_context = icer_sign_context_table[sh][sv];
                     pred_sign = icer_sign_prediction_table[sh][sv];
-                    actual_sign = (*pos) & 0x80;
+                    actual_sign = ((*pos) & 0x80) != 0;
 
                     agreement_bit = (pred_sign ^ actual_sign) & 1;
 
@@ -162,14 +162,13 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
 
 int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                               icer_context_model_typedef *context_model,
-                              encoder_context_typedef *encoder_context,
+                              decoder_context_typedef *decoder_context,
                               packet_context* pkt_context) {
     uint8_t *pos;
     uint8_t *rowstart = data;
     int category;
     uint8_t bit;
     uint8_t lsb = pkt_context->lsb;
-    uint8_t mask = 0b1 << (lsb-1);
 
     uint8_t *h0, *h1, *v0, *v1, *d0, *d1, *d2, *d3;
     uint8_t h, v, d, tmp;
@@ -198,7 +197,7 @@ int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, siz
 
             if (category == ICER_CATEGORY_3) {
                 /* pass to uncoded bin */
-                icer_decode_bit(encoder_context, &bit, 1, 2);
+                icer_decode_bit(decoder_context, &bit, 1, 2);
             } else {
                 if (category == ICER_CATEGORY_0 || category == ICER_CATEGORY_1) {
                     h = 0;
@@ -238,7 +237,7 @@ int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, siz
                     cntxt = ICER_CONTEXT_11;
                 }
 
-                icer_decode_bit(encoder_context, &bit, context_model->zero_count[cntxt], context_model->total_count[cntxt]);
+                icer_decode_bit(decoder_context, &bit, context_model->zero_count[cntxt], context_model->total_count[cntxt]);
 
                 context_model->total_count[cntxt]++;
                 context_model->zero_count[cntxt] += (uint32_t)(!bit);
@@ -273,11 +272,11 @@ int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, siz
 
                     sign_context = icer_sign_context_table[sh][sv];
                     pred_sign = icer_sign_prediction_table[sh][sv];
-                    actual_sign = (*pos) & 0x80;
 
-                    agreement_bit = (pred_sign ^ actual_sign) & 1;
+                    icer_decode_bit(decoder_context, &agreement_bit, 1, 2);
 
-                    //todo: sign bit
+                    actual_sign = (agreement_bit ^ pred_sign) & 1;
+                    (*pos) |= actual_sign << 7;
 
                     context_model->total_count[sign_context]++;
                     context_model->zero_count[sign_context] += (uint32_t)(agreement_bit == 0);
@@ -294,9 +293,6 @@ int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, siz
             h0++; h1++; v0++; v1++; d0++; d1++; d2++; d2++;
         }
         rowstart += rowstride;
-    }
-    if (flush_encode(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) {
-        return ICER_BYTE_QUOTA_EXCEEDED;
     }
     return ICER_RESULT_OK;
 }

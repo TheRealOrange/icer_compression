@@ -147,3 +147,79 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
 
     return ICER_RESULT_OK;
 }
+
+int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, packet_context *pkt_context,
+                               image_segment_typedef *seg) {
+    size_t segment_w, segment_h;
+    uint8_t *segment_start;
+    uint16_t segment_num = 0;
+
+    size_t partition_col_ind;
+    size_t partition_row_ind = 0;
+
+    icer_context_model_typedef context_model;
+    decoder_context_typedef context;
+
+    uint32_t data_in_bytes;
+    /*
+     * process top region which consists of c columns
+     * height of top region is h_t and it contains r_t rows
+     */
+    for (uint16_t row = 0; row < params->r_t; row++) {
+        /*
+         * the first r_t0 rows have height y_t
+         * the remainder have height y_t + 1
+         */
+        segment_h = params->y_t + ((row > params->r_t0) ? 1 : 0);
+        partition_col_ind = 0;
+
+        for (uint16_t col = 0; col < params->c; col++) {
+            /* the first c_t0 columns have width x_t
+             * the remainder have width x_t + 1
+             */
+            segment_w = params->x_t + ((col > params->c_t0) ? 1 : 0);
+            segment_start = data + partition_row_ind * rowstride + partition_col_ind;
+            segment_num++;
+            partition_col_ind += segment_w;
+
+            init_context_model_vals(&context_model, pkt_context->subband_type);
+            printf("t segment no: %d\n", segment_num);
+            init_entropy_decoder_context(&context, seg->data, seg->data_length);
+            decompress_bitplane_uint8(data, segment_w, segment_h, rowstride, &context_model, &context, pkt_context);
+        }
+        partition_row_ind += segment_h;
+    }
+
+    /*
+     * if the bottom region exists, process bottom region
+     * which consists of c+1 columns
+     */
+    for (uint16_t row = 0; row < (params->r - params->r_t); row++) {
+        /*
+         * the first r_b0 rows have height y_b
+         * the remainder have height y_b + 1
+         */
+        segment_h = params->y_b + ((row > params->r_b0) ? 1 : 0);
+        partition_col_ind = 0;
+
+        for (uint16_t col = 0; col < (params->c + 1); col++) {
+            /* the first c_b0 columns have width x_b
+             * the remainder have width x_b + 1
+             */
+            segment_w = params->x_b + ((col > params->c_b0) ? 1 : 0);
+            segment_start = data + partition_row_ind * rowstride + partition_col_ind;
+            segment_num++;
+            partition_col_ind += segment_w;
+
+            init_context_model_vals(&context_model, pkt_context->subband_type);
+            printf("t segment no: %d\n", segment_num);
+            init_entropy_decoder_context(&context, seg->data, seg->data_length);
+            decompress_bitplane_uint8(data, segment_w, segment_h, rowstride, &context_model, &context, pkt_context);
+
+        }
+        partition_row_ind += segment_h;
+    }
+
+    return ICER_RESULT_OK;
+}
+
