@@ -30,6 +30,8 @@ void init_entropy_coder_context(encoder_context_typedef *encoder_context, uint16
     encoder_context->output_buffer[encoder_context->output_ind] = 0;
 }
 
+//#define DEBUG_PRINTS
+
 int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt) {
     uint16_t *curr_bin;
     if (zero_cnt < (total_cnt >> 1)) {
@@ -47,6 +49,8 @@ int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint3
     int bin = icer_compute_bin(zero_cnt, total_cnt);
     uint16_t prefix;
     uint16_t golomb_k;
+    uint16_t golomb_out_code;
+    uint8_t golomb_out_bits;
     uint16_t bit16 = (bit != 0);
 
     if (encoder_context->bin_current_buf[bin] == -1) {
@@ -58,21 +62,32 @@ int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint3
         curr_bin = encoder_context->encode_buffer + encoder_context->bin_current_buf[bin];
         (*curr_bin) = bin << ICER_ENC_BUF_BITS_OFFSET;
     } else curr_bin = encoder_context->encode_buffer + encoder_context->bin_current_buf[bin];
+#ifdef  DEBUG_PRINTS
     printf("bin: %d, bit: %d\n",bin, bit16);
+#endif
 
     if (bin > ICER_ENC_BIN_8) {
         /* golomb code bins */
         if (!bit16) (*curr_bin)++;
-        //printf("golomb code\n");
+#ifdef  DEBUG_PRINTS
+        printf("golomb code\n");
+#endif
         if (bit16) {
             golomb_k = (*curr_bin) & ICER_ENC_BUF_DATA_MASK;
-            printf("golomb code case1: %d, bits: %d\n", golomb_k + (golomb_k >= golomb_coders[bin].i), golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i));
-            (*curr_bin) = ((golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i)) << ICER_ENC_BUF_BITS_OFFSET);
-            (*curr_bin) |= ((golomb_k + golomb_coders[bin].i) & ICER_ENC_BUF_DATA_MASK);
+#ifdef  DEBUG_PRINTS
+            printf("golomb code case1: %d, bits: %d\n", golomb_k + ((golomb_k < golomb_coders[bin].i) ? 0 : golomb_coders[bin].i), golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i));
+#endif
+            golomb_out_code = golomb_k + ((golomb_k < golomb_coders[bin].i) ? 0 : golomb_coders[bin].i);
+            golomb_out_bits = golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i);
+            icer_reverse_bits(&golomb_out_code, golomb_out_bits);
+            (*curr_bin) = (golomb_out_bits << ICER_ENC_BUF_BITS_OFFSET);
+            (*curr_bin) |= (golomb_out_code & ICER_ENC_BUF_DATA_MASK);
             (*curr_bin) |= ICER_ENC_BUF_DONE_MASK;
             encoder_context->bin_current_buf[bin] = -1;
         } else if (((*curr_bin) & ICER_ENC_BUF_DATA_MASK) >= golomb_coders[bin].m) {
+#ifdef  DEBUG_PRINTS
             printf("golomb code case2\n");
+#endif
             (*curr_bin) = 1 << ICER_ENC_BUF_BITS_OFFSET;
             (*curr_bin) |= 1;
             (*curr_bin) |= ICER_ENC_BUF_DONE_MASK;
@@ -87,7 +102,9 @@ int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint3
             (*curr_bin) = custom_coding_scheme[bin][prefix].output_code_bits << ICER_ENC_BUF_BITS_OFFSET;
             (*curr_bin) |= custom_coding_scheme[bin][prefix].output_code & ICER_ENC_BUF_DATA_MASK;
             (*curr_bin) |= ICER_ENC_BUF_DONE_MASK;
+#ifdef  DEBUG_PRINTS
             printf("bin: %d, prefix: %d, output: %d, num_bits: %d\n", bin, prefix, custom_coding_scheme[bin][prefix].output_code, custom_coding_scheme[bin][prefix].output_code_bits );
+#endif
             encoder_context->bin_current_buf[bin] = -1;
             encoder_context->bin_current_buf_bits[bin] = 0;
         }
@@ -114,11 +131,15 @@ int icer_popbuf_while_avail(encoder_context_typedef *encoder_context) {
     while (encoder_context->used > 0 && (encoder_context->encode_buffer[encoder_context->head] & ICER_ENC_BUF_DONE_MASK)) {
         out = pop_buf(encoder_context);
         bits = out >> ICER_ENC_BUF_BITS_OFFSET;
+#ifdef  DEBUG_PRINTS
         printf("popbuf\n");
         printf("pop num bits: %d, bits: %d\n", bits, out & ((1 << bits) - 1));
+#endif
         while (bits) {
             bits_to_encode = icer_min_int(8-encoder_context->output_bit_offset, bits);
+#ifdef  DEBUG_PRINTS
             printf("enc num bits: %d, bits: %d\n", bits_to_encode, out & ((1 << bits_to_encode) - 1));
+#endif
             //mask = INT16_MIN >> (bits_to_encode-1);
             encoder_context->output_buffer[encoder_context->output_ind] |= (out & ((1 << bits_to_encode) - 1)) << (encoder_context->output_bit_offset);
             out >>= bits_to_encode;
@@ -133,7 +154,9 @@ int icer_popbuf_while_avail(encoder_context_typedef *encoder_context) {
             if (encoder_context->output_ind == encoder_context->max_output_length) {
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
+#ifdef  DEBUG_PRINTS
             printf("ind: %d, offset: %d\n", encoder_context->output_ind, encoder_context->output_bit_offset);
+#endif
         }
     }
     return ICER_RESULT_OK;
@@ -148,7 +171,11 @@ int flush_encode(encoder_context_typedef *encoder_context) {
         uint8_t bin = (*first) >> ICER_ENC_BUF_BITS_OFFSET;
 
         uint16_t golomb_k;
+        uint16_t golomb_out_code;
+        uint8_t golomb_out_bits;
+#ifdef  DEBUG_PRINTS
         printf("flushing bin: %d\n", bin);
+#endif
 
         if (bin > ICER_ENC_BIN_8) {
             /* golomb code bins */
@@ -157,12 +184,19 @@ int flush_encode(encoder_context_typedef *encoder_context) {
                 *first = 1 << ICER_ENC_BUF_BITS_OFFSET;
                 *first |= 1;
                 *first |= ICER_ENC_BUF_DONE_MASK;
+#ifdef  DEBUG_PRINTS
                 printf("flush golomb bits: %d\n", 1);
+#endif
             } else {
-                *first = ((golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i)) << ICER_ENC_BUF_BITS_OFFSET);
-                *first |= ((golomb_k + (golomb_k >= golomb_coders[bin].i)) & ICER_ENC_BUF_DATA_MASK);
+                golomb_out_code = golomb_k + ((golomb_k < golomb_coders[bin].i) ? 0 : golomb_coders[bin].i);
+                golomb_out_bits = golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i);
+                icer_reverse_bits(&golomb_out_code, golomb_out_bits);
+                *first = (golomb_out_bits << ICER_ENC_BUF_BITS_OFFSET);
+                *first |= (golomb_out_code & ICER_ENC_BUF_DATA_MASK);
                 *first |= ICER_ENC_BUF_DONE_MASK;
+#ifdef  DEBUG_PRINTS
                 printf("flush golomb bits: %d\n", (golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i)));
+#endif
             }
             encoder_context->bin_current_buf[bin] = -1;
         } else if (bin != ICER_ENC_BIN_1) {
@@ -176,13 +210,17 @@ int flush_encode(encoder_context_typedef *encoder_context) {
             (*first) = custom_coding_scheme[bin][prefix].output_code_bits << ICER_ENC_BUF_BITS_OFFSET;
             (*first) |= custom_coding_scheme[bin][prefix].output_code & ICER_ENC_BUF_DATA_MASK;
             (*first) |= ICER_ENC_BUF_DONE_MASK;
+#ifdef  DEBUG_PRINTS
             printf("flushed num bits: %d, bits: %d\n", custom_coding_scheme[bin][prefix].output_code_bits, custom_coding_scheme[bin][prefix].output_code);
+#endif
             encoder_context->bin_current_buf[bin] = -1;
             encoder_context->bin_current_buf_bits[bin] = 0;
         } else {
             /* uncoded bin */
             // this should never happen?
+#ifdef  DEBUG_PRINTS
             printf("oopsies its broken\n");
+#endif
         }
     }
 

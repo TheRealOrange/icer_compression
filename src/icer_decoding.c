@@ -101,6 +101,8 @@ int icer_pop_bits_from_codeword(decoder_context_typedef *decoder_context, uint8_
     return num;
 }
 
+//#define DEBUG_PRINTS
+
 int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint32_t zero_cnt, uint32_t total_cnt) {
     bool inv = false, b;
     int code_bit;
@@ -120,7 +122,9 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
     }
 
     int bin = icer_compute_bin(zero_cnt, total_cnt);
+#ifdef  DEBUG_PRINTS
     printf("dec: %d, inv: %d\n", bin, inv);
+#endif
 
     if (decoder_context->bin_bits[bin] <= 0 || decoder_context->decoded_words - decoder_context->bin_decode_index[bin] >= ICER_CIRC_BUF_SIZE) {
         /* ran out of bits in the bit, time to process a new codeword */
@@ -134,17 +138,23 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
                 icer_push_bin_bits(decoder_context, bin, 0b0, golomb_coders[bin].m);
             } else {
                 golomb_k = icer_get_bits_from_codeword(decoder_context, golomb_coders[bin].l);
-                //icer_reverse_bits(&golomb_k, golomb_coders[bin].l);
+                icer_reverse_bits(&golomb_k, golomb_coders[bin].l);
+#ifdef  DEBUG_PRINTS
                 printf("l: %d, i: %d, m: %d\n", golomb_coders[bin].l, golomb_coders[bin].i, golomb_coders[bin].i);
+#endif
                 if (golomb_k < golomb_coders[bin].i) {
+#ifdef  DEBUG_PRINTS
                     printf("k: %d case 1\n", golomb_k);
+#endif
                     icer_pop_bits_from_codeword(decoder_context, golomb_coders[bin].l);
                     icer_push_bin_bits(decoder_context, bin, 0b1, 1);
                     icer_push_bin_bits(decoder_context, bin, 0b0, golomb_k);
                 } else {
                     golomb_k = icer_pop_bits_from_codeword(decoder_context, golomb_coders[bin].l + 1);
-                    //icer_reverse_bits(&golomb_k, golomb_coders[bin].l + 1);
+                    icer_reverse_bits(&golomb_k, golomb_coders[bin].l + 1);
+#ifdef  DEBUG_PRINTS
                     printf("k: %d case 2, num_bits: %d\n", golomb_k, golomb_k - golomb_coders[bin].i + 1);
+#endif
                     icer_push_bin_bits(decoder_context, bin, 0b1, 1);
                     icer_push_bin_bits(decoder_context, bin, 0b0, golomb_k - golomb_coders[bin].i);
                 }
@@ -157,15 +167,23 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
                 if (decoder_context->decoded_bits_total + num_bits + 1 >= decoder_context->encoded_bits_total) return ICER_DECODER_OUT_OF_DATA;
                 codeword |= icer_get_bit_from_codeword(decoder_context, num_bits+1) << num_bits;
                 num_bits++;
+#ifdef  DEBUG_PRINTS
                 printf("codeword: %d, bits: %d\n", codeword, num_bits+1);
+#endif
                 if (codeword < 32) {
                     if (custom_decode_scheme[bin][codeword].input_code_bits == num_bits) {
+#ifdef  DEBUG_PRINTS
                         printf("correct codeword: %d, bits: %d\n", codeword, num_bits);
+#endif
                         icer_push_bin_bits(decoder_context, bin, custom_decode_scheme[bin][codeword].output_code, custom_decode_scheme[bin][codeword].output_code_bits);
+#ifdef  DEBUG_PRINTS
                         printf("bin: %d, push bits: %d, bits: %d\n", bin, custom_decode_scheme[bin][codeword].output_code,custom_decode_scheme[bin][codeword].output_code_bits);
+#endif
                         int test = icer_pop_bits_from_codeword(decoder_context, num_bits);
                         if (codeword != test) {
+#ifdef  DEBUG_PRINTS
                             printf("haiya: %d\n", test);
+#endif
                             return ICER_DECODED_INVALID_DATA;
                         } else {
                             break;
@@ -185,13 +203,17 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
         decoder_context->decoded_words++;
         decoder_context->bin_decode_index[bin] = decoder_context->decoded_words;
     }
+#ifdef  DEBUG_PRINTS
     printf("bin: %d, bits: %d\n", bin, decoder_context->bin_bits[bin]);
+#endif
     int32_t bin_ind = decoder_context->bin_bits[bin] / 32;
     int32_t bit_offset = decoder_context->bin_bits[bin] % 32;
     b = (decoder_context->bin_buf[bin][bin_ind] & (1 << (bit_offset-1))) != 0;
     decoder_context->bin_buf[bin][bin_ind] &= ~(1 << (bit_offset-1));
     decoder_context->bin_bits[bin]--;
     (*bit) = inv == !b;
+#ifdef  DEBUG_PRINTS
     printf("bit: %d\n", (*bit));
+#endif
     return ICER_RESULT_OK;
 }

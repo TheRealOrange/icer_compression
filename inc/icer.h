@@ -25,7 +25,7 @@ uint32_t __inline __clz( uint32_t value ) {
 }
 #endif
 
-#define ICER_CIRC_BUF_SIZE 2048
+#define ICER_CIRC_BUF_SIZE 5
 #define MAX_K 12
 
 enum icer_status {
@@ -324,6 +324,8 @@ static inline unsigned icer_max_uint(unsigned a, unsigned b);
 
 static inline int icer_min_int(int a, int b);
 
+static inline void icer_reverse_bits(uint16_t *bits, uint8_t num);
+
 extern size_t slice_lengths[MAX_K];
 
 extern uint16_t encode_circ_buf[ICER_CIRC_BUF_SIZE];
@@ -377,6 +379,16 @@ static inline unsigned icer_max_uint(unsigned a, unsigned b) {
 
 static inline int icer_min_int(int a, int b) {
     return (a < b) ? a : b;
+}
+
+static inline void icer_reverse_bits(uint16_t *bits, uint8_t num) {
+    uint16_t reversed = 0;
+    for (int b = 0; b < num;b++) {
+        reversed <<= 1;
+        reversed |= (*bits) & 1;
+        (*bits) >>= 1;
+    }
+    (*bits) = reversed;
 }
 
 

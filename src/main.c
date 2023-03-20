@@ -44,7 +44,7 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
 }
 
 int main() {
-    setbuf(stdout, 0);
+    //setbuf(stdout, 0);
     const size_t out_w = 2000;
     const size_t out_h = 2000;
     const size_t out_channels = 1;
@@ -124,25 +124,25 @@ int main() {
         pkt_context.lsb = i;
         pkt_context.subband_type = ICER_SUBBAND_HL;
         pkt_context.ll_mean_val = 0;
-        pkt_context.subband_number = 0;
-        /*
+        pkt_context.subband_number = 0;/*
+
         if (compress_partition_uint8(datastart, &partition, out_w, &pkt_context, &output) == ICER_BYTE_QUOTA_EXCEEDED){
             printf("byte quota exceeded\n");
             break;
         }
 
         image_segment_typedef *seg = (image_segment_typedef*)output_data;
-        decompress_partition_uint8(decoded, &partition, icer_floor_div_size_t(out_w, 2), &pkt_context, seg);*/
-
-        printf("output size: %zu bytes\n", output.size_used);
+        decompress_partition_uint8(decoded, &partition, icer_floor_div_size_t(out_w, 2), &pkt_context, seg);
+        stbi_write_bmp("../aaah.bmp", icer_floor_div_size_t(out_w, 2), icer_floor_div_size_t(out_h, 2), 1, decoded);
+        printf("output size: %zu bytes\n", output.size_used);*/
 
     }
     compare(datastart, decoded, 800*800);
     stbi_write_bmp("../aaah.bmp", icer_floor_div_size_t(out_w, 2), icer_floor_div_size_t(out_h, 2), 1, decoded);
 
-#define TEST_LEN 6
-    int prob_a[TEST_LEN] = {  6, 9, 9, 8, 7, 6};
-    int prob_b = 10;
+#define TEST_LEN 40
+    int prob_a[TEST_LEN] = {  6, 6, 2, 6, 4, 4, 32, 33, 34, 35, 6, 6, 2, 6, 4, 4, 32, 33, 34, 35, 6, 6, 2, 6, 4, 4, 32, 33, 34, 35, 6, 6, 2, 6, 4, 4, 32, 33, 34, 35};
+    int prob_b = 60;
 
     uint8_t bits[TEST_LEN] = { 0 };
     uint16_t circ_buf[ICER_CIRC_BUF_SIZE];
