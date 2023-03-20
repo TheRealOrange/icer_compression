@@ -103,8 +103,8 @@ void icer_init_decodescheme() {
             if (custom_decode_scheme[it][j].output_code_bits != 0) {
                 uint8_t reversed = 0;
                 for (int b = 0; b < custom_decode_scheme[it][j].output_code_bits;b++) {
-                    reversed |= custom_decode_scheme[it][j].output_code & 1;
                     reversed <<= 1;
+                    reversed |= custom_decode_scheme[it][j].output_code & 1;
                     custom_decode_scheme[it][j].output_code >>= 1;
                 }
                 custom_decode_scheme[it][j].output_code = reversed;
@@ -125,14 +125,14 @@ void icer_init_codingscheme() {
     INIT_CODING_SCHEME(ICER_ENC_BIN_2, 0b10, 2, 0b01, 2);
     INIT_CODING_SCHEME(ICER_ENC_BIN_2, 0b100, 3, 0b100, 3);
     INIT_CODING_SCHEME(ICER_ENC_BIN_2, 0b1000, 4, 0b1000, 4);
-    INIT_CODING_SCHEME(ICER_ENC_BIN_2, 0b00001, 5, 0b00000, 5);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_2, 0b10000, 5, 0b00000, 5);
     INIT_CODING_SCHEME(ICER_ENC_BIN_2, 0b00000, 5, 0b0111, 4);
 
     INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b10, 2, 0b01, 2);
     INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b100, 3, 0b00, 2);
     INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b0000, 4, 0b011, 3);
-    INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b00011, 5, 0b10010, 5);
-    INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b00010, 5, 0b1111, 4);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b11000, 5, 0b10010, 5);
+    INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b01000, 5, 0b1111, 4);
     INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b01, 2, 0b110, 3);
     INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b0011, 4, 0b0111, 4);
     INIT_CODING_SCHEME(ICER_ENC_BIN_3, 0b1011, 4, 0b00010, 5);

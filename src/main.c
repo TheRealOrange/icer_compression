@@ -44,6 +44,7 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
 }
 
 int main() {
+    setbuf(stdout, 0);
     const size_t out_w = 2000;
     const size_t out_h = 2000;
     const size_t out_channels = 1;
@@ -124,43 +125,61 @@ int main() {
         pkt_context.subband_type = ICER_SUBBAND_HL;
         pkt_context.ll_mean_val = 0;
         pkt_context.subband_number = 0;
+        /*
         if (compress_partition_uint8(datastart, &partition, out_w, &pkt_context, &output) == ICER_BYTE_QUOTA_EXCEEDED){
             printf("byte quota exceeded\n");
             break;
         }
 
         image_segment_typedef *seg = (image_segment_typedef*)output_data;
-        decompress_partition_uint8(decoded, &partition, 1000, &pkt_context, seg);
+        decompress_partition_uint8(decoded, &partition, icer_floor_div_size_t(out_w, 2), &pkt_context, seg);*/
 
         printf("output size: %zu bytes\n", output.size_used);
 
     }
     compare(datastart, decoded, 800*800);
-    stbi_write_bmp("../aaah.bmp", 1000, 1000, 1, decoded);
+    stbi_write_bmp("../aaah.bmp", icer_floor_div_size_t(out_w, 2), icer_floor_div_size_t(out_h, 2), 1, decoded);
 
-    int prob_a[17] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+#define TEST_LEN 24
+    int prob_a[TEST_LEN] = {  5, 4, 3, 6, 6, 6, 6, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 6, 6, 6, 6};
     int prob_b = 10;
 
-    uint8_t bits[17] = { 0 };
+    uint8_t bits[TEST_LEN] = { 0 };
     uint16_t circ_buf[ICER_CIRC_BUF_SIZE];
     uint8_t *out_bits = malloc(1000);
     encoder_context_typedef enc;
     decoder_context_typedef dec;
 
     init_entropy_coder_context(&enc, circ_buf, ICER_CIRC_BUF_SIZE, out_bits, 1000);
-    for (int i = 0;i < 17;i++) {
-        icer_encode_bit(&enc, bits[i], prob_a[i], prob_b);
+    for (int i = 0;i < TEST_LEN;i++) {
         printf("%d ", bits[i]);
     }
     printf("\n");
+    for (int i = 0;i < TEST_LEN;i++) {
+        icer_encode_bit(&enc, bits[i], prob_a[i], prob_b);
+    }
+    printf("flush\n");
+    while (enc.used > 0) flush_encode(&enc);
 
     uint32_t num_bits = enc.output_ind * 8 + enc.output_bit_offset;
+    printf("out bits: ");
+    for (int i = 0;i < num_bits;i++) {
+        int ind = i / 8;
+        int offset = i%8;
+        printf("%d ", (out_bits[ind] & (1 << offset)) != 0);
+    }
+    printf("\n");
+    printf("out num bits: %d\n", num_bits);
     init_entropy_decoder_context(&dec, out_bits, num_bits);
 
-    uint8_t code_bits;
-    for (int i = 0;i < 17;i++) {
-        icer_decode_bit(&dec, &code_bits, prob_a[i], prob_b);
-        printf("%d ", code_bits);
+    uint8_t code_bits[TEST_LEN];
+    for (int i = 0;i < TEST_LEN;i++) {
+        code_bits[i] = 0;
+        icer_decode_bit(&dec, &(code_bits[i]), prob_a[i], prob_b);
+    }
+
+    for (int i = 0;i < TEST_LEN;i++) {
+        printf("%d ", code_bits[i]);
     }
     printf("\n");
 
