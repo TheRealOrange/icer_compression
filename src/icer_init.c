@@ -98,6 +98,7 @@ void icer_init_decodescheme() {
     INIT_DECODE_SCHEME(ICER_ENC_BIN_8, 0b01, 2, 0b011, 3);
     INIT_DECODE_SCHEME(ICER_ENC_BIN_8, 0b11, 2, 0b11111, 5);
 
+
     for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
         for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) {
             if (custom_decode_scheme[it][j].output_code_bits != 0) {
@@ -205,6 +206,7 @@ void icer_init_flushbits() {
     INIT_FLUSH_BITS(ICER_ENC_BIN_5, 0b01, 2, 1, 1);
     INIT_FLUSH_BITS(ICER_ENC_BIN_5, 0b001, 3, 1, 1);
     INIT_FLUSH_BITS(ICER_ENC_BIN_5, 0b0001, 4, 0, 1);
+    INIT_FLUSH_BITS(ICER_ENC_BIN_5, 0b1, 1, 0b01, 2);
     INIT_FLUSH_BITS(ICER_ENC_BIN_5, 0b11, 2, 0, 1);
 
     INIT_FLUSH_BITS(ICER_ENC_BIN_6, 0b0, 1, 0b01, 2);

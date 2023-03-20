@@ -67,9 +67,8 @@ int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint3
         if (bit16) {
             golomb_k = (*curr_bin) & ICER_ENC_BUF_DATA_MASK;
             printf("golomb code case1: %d, bits: %d\n", golomb_k + (golomb_k >= golomb_coders[bin].i), golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i));
-
             (*curr_bin) = ((golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i)) << ICER_ENC_BUF_BITS_OFFSET);
-            (*curr_bin) |= ((golomb_k + (golomb_k >= golomb_coders[bin].i)) & ICER_ENC_BUF_DATA_MASK);
+            (*curr_bin) |= ((golomb_k + golomb_coders[bin].i) & ICER_ENC_BUF_DATA_MASK);
             (*curr_bin) |= ICER_ENC_BUF_DONE_MASK;
             encoder_context->bin_current_buf[bin] = -1;
         } else if (((*curr_bin) & ICER_ENC_BUF_DATA_MASK) >= golomb_coders[bin].m) {

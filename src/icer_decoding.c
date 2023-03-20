@@ -133,18 +133,20 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
                 icer_pop_bits_from_codeword(decoder_context, 1);
                 icer_push_bin_bits(decoder_context, bin, 0b0, golomb_coders[bin].m);
             } else {
-                golomb_k = icer_get_bit_from_codeword(decoder_context, golomb_coders[bin].l);
+                golomb_k = icer_get_bits_from_codeword(decoder_context, golomb_coders[bin].l);
+                //icer_reverse_bits(&golomb_k, golomb_coders[bin].l);
                 printf("l: %d, i: %d, m: %d\n", golomb_coders[bin].l, golomb_coders[bin].i, golomb_coders[bin].i);
                 if (golomb_k < golomb_coders[bin].i) {
-                    printf("k: %d\n", golomb_k);
+                    printf("k: %d case 1\n", golomb_k);
                     icer_pop_bits_from_codeword(decoder_context, golomb_coders[bin].l);
-                    icer_push_bin_bits(decoder_context, bin, 0b0, golomb_k);
                     icer_push_bin_bits(decoder_context, bin, 0b1, 1);
+                    icer_push_bin_bits(decoder_context, bin, 0b0, golomb_k);
                 } else {
                     golomb_k = icer_pop_bits_from_codeword(decoder_context, golomb_coders[bin].l + 1);
-                    printf("k: %d\n", golomb_k);
-                    icer_push_bin_bits(decoder_context, bin, 0b0, golomb_k - golomb_coders[bin].i);
+                    //icer_reverse_bits(&golomb_k, golomb_coders[bin].l + 1);
+                    printf("k: %d case 2, num_bits: %d\n", golomb_k, golomb_k - golomb_coders[bin].i + 1);
                     icer_push_bin_bits(decoder_context, bin, 0b1, 1);
+                    icer_push_bin_bits(decoder_context, bin, 0b0, golomb_k - golomb_coders[bin].i);
                 }
             }
         } else if (bin != ICER_ENC_BIN_1) {

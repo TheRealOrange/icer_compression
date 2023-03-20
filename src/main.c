@@ -140,8 +140,8 @@ int main() {
     compare(datastart, decoded, 800*800);
     stbi_write_bmp("../aaah.bmp", icer_floor_div_size_t(out_w, 2), icer_floor_div_size_t(out_h, 2), 1, decoded);
 
-#define TEST_LEN 24
-    int prob_a[TEST_LEN] = {  5, 4, 3, 6, 6, 6, 6, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 6, 6, 6, 6};
+#define TEST_LEN 6
+    int prob_a[TEST_LEN] = {  6, 9, 9, 8, 7, 6};
     int prob_b = 10;
 
     uint8_t bits[TEST_LEN] = { 0 };
