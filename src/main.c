@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <time.h>
 
+#include <time.h>
+#include <stdlib.h>
+
 #include "stb_image.h"
 #include "stb_image_resize.h"
 #include "stb_image_write.h"
@@ -44,9 +47,9 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
 }
 
 int main() {
-    //setbuf(stdout, 0);
-    const size_t out_w = 2000;
-    const size_t out_h = 2000;
+    setbuf(stdout, 0);
+    const size_t out_w = 256;
+    const size_t out_h = 256;
     const size_t out_channels = 1;
 
     int src_w, src_h, n;
@@ -103,92 +106,12 @@ int main() {
 
     bool overflow;
     begin = clock();
-    overflow = icer_wavelet_transform_stages(transformed, out_w, out_h, 8, ICER_FILTER_F);
+    overflow = icer_wavelet_transform_stages(transformed, out_w, out_h, 1, ICER_FILTER_F);
     end = clock();
     printf("time taken for wavelet transform: %lf\n", (double)(end - begin) / CLOCKS_PER_SEC);
     if (overflow) {
         printf("overflow\n");
     }
-
-    uint8_t *decoded = malloc(out_w*out_h);
-    memset(decoded, 0, out_w * out_h);
-    uint8_t *datastart = transformed + icer_ceil_div_size_t(out_w, 2);
-    partition_param_typdef partition;
-    packet_context pkt_context;
-    uint8_t *output_data = malloc(500000);
-    output_data_buf_typedef output;
-    icer_init_output_struct(&output, output_data, 500000);
-    icer_generate_partition_parameters(&partition, icer_floor_div_size_t(out_w, 2), icer_ceil_div_size_t(out_h, 2), 1);
-    for (int i = 6;i >= 0;i--) {
-        printf("lsb: %2d\n", i);
-        pkt_context.lsb = i;
-        pkt_context.subband_type = ICER_SUBBAND_HL;
-        pkt_context.ll_mean_val = 0;
-        pkt_context.subband_number = 0;/*
-
-        if (compress_partition_uint8(datastart, &partition, out_w, &pkt_context, &output) == ICER_BYTE_QUOTA_EXCEEDED){
-            printf("byte quota exceeded\n");
-            break;
-        }
-
-        image_segment_typedef *seg = (image_segment_typedef*)output_data;
-        decompress_partition_uint8(decoded, &partition, icer_floor_div_size_t(out_w, 2), &pkt_context, seg);
-        stbi_write_bmp("../aaah.bmp", icer_floor_div_size_t(out_w, 2), icer_floor_div_size_t(out_h, 2), 1, decoded);
-        printf("output size: %zu bytes\n", output.size_used);*/
-
-    }
-    compare(datastart, decoded, 800*800);
-    stbi_write_bmp("../aaah.bmp", icer_floor_div_size_t(out_w, 2), icer_floor_div_size_t(out_h, 2), 1, decoded);
-
-#define TEST_LEN 40
-    int prob_a[TEST_LEN] = {  6, 6, 2, 6, 4, 4, 32, 33, 34, 35, 6, 6, 2, 6, 4, 4, 32, 33, 34, 35, 6, 6, 2, 6, 4, 4, 32, 33, 34, 35, 6, 6, 2, 6, 4, 4, 32, 33, 34, 35};
-    int prob_b = 60;
-
-    uint8_t bits[TEST_LEN] = { 0 };
-    uint16_t circ_buf[ICER_CIRC_BUF_SIZE];
-    uint8_t *out_bits = malloc(1000);
-    encoder_context_typedef enc;
-    decoder_context_typedef dec;
-
-    init_entropy_coder_context(&enc, circ_buf, ICER_CIRC_BUF_SIZE, out_bits, 1000);
-    for (int i = 0;i < TEST_LEN;i++) {
-        printf("%d ", bits[i]);
-    }
-    printf("\n");
-    for (int i = 0;i < TEST_LEN;i++) {
-        icer_encode_bit(&enc, bits[i], prob_a[i], prob_b);
-    }
-    printf("flush\n");
-    while (enc.used > 0) flush_encode(&enc);
-
-    uint32_t num_bits = enc.output_ind * 8 + enc.output_bit_offset;
-    printf("out bits: ");
-    for (int i = 0;i < num_bits;i++) {
-        int ind = i / 8;
-        int offset = i%8;
-        printf("%d ", (out_bits[ind] & (1 << offset)) != 0);
-    }
-    printf("\n");
-    printf("out num bits: %d\n", num_bits);
-    init_entropy_decoder_context(&dec, out_bits, num_bits);
-
-    uint8_t code_bits[TEST_LEN];
-    for (int i = 0;i < TEST_LEN;i++) {
-        code_bits[i] = 0;
-        icer_decode_bit(&dec, &(code_bits[i]), prob_a[i], prob_b);
-    }
-
-    for (int i = 0;i < TEST_LEN;i++) {
-        printf("%d ", code_bits[i]);
-    }
-    printf("\n");
-
-    printf("total size: %zu bytes\n", output.size_allocated);
-    printf("output size: %zu bytes\n", output.size_used);
-    for (size_t i = 0;i < output.size_used;i++) {
-        //printf("0x%02x ", output.data_start[i]);
-    }
-    printf("\n");
 
     printf("saving wavelet transformed image to: \"%s\"\n", wavelet_filename);
     res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, transformed);
@@ -197,8 +120,148 @@ int main() {
         return 0;
     }
 
+    uint8_t *decoded = malloc(out_w*out_h);
+    memset(decoded, 0, out_w * out_h);
+    uint8_t *datastart = transformed + icer_ceil_div_size_t(out_w, 2);
+    partition_param_typdef partition;
+    packet_context pkt_context;
+    uint8_t *output_data = malloc(500000);
+    uint8_t *seg_start = output_data;
+    output_data_buf_typedef output;
+    icer_init_output_struct(&output, output_data, 500000);
+    icer_generate_partition_parameters(&partition, icer_floor_div_size_t(out_w, 2), icer_ceil_div_size_t(out_h, 2), 1);
+    for (int i = 6;i >= 0;i--) {
+        printf("lsb: %2d\n", i);
+        pkt_context.lsb = i;
+        pkt_context.subband_type = ICER_SUBBAND_HL;
+        pkt_context.ll_mean_val = 0;
+        pkt_context.subband_number = 0;
+/*
+        if (compress_partition_uint8(datastart, &partition, out_w, &pkt_context, &output) == ICER_BYTE_QUOTA_EXCEEDED){
+            printf("byte quota exceeded\n");
+            break;
+        }
+
+        image_segment_typedef *seg = (image_segment_typedef*)seg_start;
+        seg_start = output.data_start + output.size_used;
+
+        for (int j = 0;j < seg->data_length;j++) {
+            int ind = j / 8;
+            int offset = j%8;
+            printf("%d ", (((uint8_t*)seg + sizeof(image_segment_typedef))[ind] & (1 << offset)) != 0);
+        }
+        printf("\n");
+
+        //decompress_partition_uint8(decoded, &partition, out_w, &pkt_context, seg);
+        decompress_partition_uint8(decoded + icer_ceil_div_size_t(out_w, 2), &partition, out_w, &pkt_context, seg);
+        char temp_filename[100];
+        snprintf(temp_filename, 100, "../aah_%d.bmp", i);
+        stbi_write_bmp(temp_filename, out_w, out_h, 1, decoded);
+        printf("output size: %zu bytes\n", output.size_used);*/
+
+    }
+    //compare(datastart, decoded, 800*800);
+    //stbi_write_bmp("../aaah.bmp", icer_floor_div_size_t(out_w, 2), icer_floor_div_size_t(out_h, 2), 1, decoded);
+    stbi_write_bmp("../aaah.bmp", out_w, out_h, 1, decoded);
+#define RANDOM_SAMPLE
+#if 1
+#define TEST_LEN 8000
+#ifdef RANDOM_SAMPLE
+    int *prob_a = malloc(TEST_LEN*sizeof(int));
+
+    uint8_t *bits = malloc(TEST_LEN);;
+#else
+    int prob_a[TEST_LEN] = {43, 28, 57, 22, 50, 48, 32, 19};
+    uint8_t bits[TEST_LEN] = {1, 0, 1, 1, 1, 0, 0, 1};
+#endif
+    int prob_b = 80;
+    uint16_t circ_buf[ICER_CIRC_BUF_SIZE];
+    uint8_t *out_bits = malloc(TEST_LEN*100);
+    encoder_context_typedef enc;
+    decoder_context_typedef dec;
+
+    srand(time(NULL));
+
+    for (int k = 0;k < 500000;k++) {
+        init_entropy_coder_context(&enc, circ_buf, ICER_CIRC_BUF_SIZE, out_bits, TEST_LEN*100);
+#ifdef RANDOM_SAMPLE
+        if (k % 1000 == 0) {
+            printf("*");
+        }
+        //printf("random testcase number: %d\n", k);
+        for (int i = 0; i < TEST_LEN; i++) {
+            bits[i] = rand() % 2;
+            prob_a[i] = rand() % prob_b;
+        }
+#endif
+        for (int i = 0; i < TEST_LEN; i++) {
+            icer_encode_bit(&enc, bits[i], prob_a[i], prob_b);
+        }
+        //printf("flush\n");
+        while (enc.used > 0) flush_encode(&enc);
+
+        uint32_t num_bits = enc.output_ind * 8 + enc.output_bit_offset;
+        init_entropy_decoder_context(&dec, out_bits, num_bits);
+
+        uint8_t code_bits[TEST_LEN];
+        for (int i = 0; i < TEST_LEN; i++) {
+            code_bits[i] = 0;
+            icer_decode_bit(&dec, &(code_bits[i]), prob_a[i], prob_b);
+        }
+
+        bool match = true;
+        for (int i = 0; i < TEST_LEN; i++) {
+            if (bits[i] != code_bits[i]) {
+                if (match) {
+                    printf("bit error starts at %d\n", i);
+                }
+                match = false;
+            }
+        }
+
+        if (!match) {
+            printf("\nrandom testcase number: %d\n", k);
+            printf("error, does not match\n");
+            printf("testcase input bits: ");
+            for (int i = 0; i < TEST_LEN; i++) {
+                printf("%d, ", bits[i]);
+            }
+            printf("\n");
+            printf("testcase probabilities: ");
+            for (int i = 0; i < TEST_LEN; i++) {
+                printf("%2d, ", prob_a[i]);
+            }
+            printf("\n");
+            printf("testcase encoded bits: ");
+            for (int i = 0; i < num_bits; i++) {
+                int ind = i / 8;
+                int offset = i % 8;
+                printf("%d ", (out_bits[ind] & (1 << offset)) != 0);
+            }
+            printf("\n");
+            printf("out num bits: %d\n", num_bits);
+            printf("testcase decoded bits: ");
+            for (int i = 0; i < TEST_LEN; i++) {
+                printf("%d, ", code_bits[i]);
+            }
+            printf("\n");
+            break;
+        } else {
+            //printf("identical\n");
+        }
+    }
+    printf("\n");
+#endif
+
+    printf("total size: %zu bytes\n", output.size_allocated);
+    printf("output size: %zu bytes\n", output.size_used);
+    for (size_t i = 0;i < output.size_used;i++) {
+        //printf("0x%02x ", output.data_start[i]);
+    }
+    printf("\n");
+
     begin = clock();
-    overflow = icer_inverse_wavelet_transform_stages(transformed, out_w, out_h, 8, ICER_FILTER_F);
+    overflow = icer_inverse_wavelet_transform_stages(transformed, out_w, out_h, 1, ICER_FILTER_F);
     end = clock();
     printf("time taken for inverse wavelet transform: %lf\n", (double)(end - begin) / CLOCKS_PER_SEC);
     if (overflow) {

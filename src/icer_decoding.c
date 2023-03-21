@@ -2,6 +2,7 @@
 // Created by linyi on 19/3/2023.
 //
 
+#include <string.h>
 #include "icer.h"
 
 #define ICER_BITMASK_MACRO(x) (((unsigned)1 << x) - 1)
@@ -128,6 +129,8 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
 
     if (decoder_context->bin_bits[bin] <= 0 || decoder_context->decoded_words - decoder_context->bin_decode_index[bin] >= ICER_CIRC_BUF_SIZE) {
         /* ran out of bits in the bit, time to process a new codeword */
+        decoder_context->bin_bits[bin] = 0;
+        memset(decoder_context->bin_buf[bin], 0, ICER_DECODER_BIT_BIN_MAX*sizeof(decoder_context->bin_buf[bin][0]));
         if (bin > ICER_ENC_BIN_8) {
             /* golomb code bins */
             code_bit = icer_get_bit_from_codeword(decoder_context, 1);
@@ -168,7 +171,7 @@ int icer_decode_bit(decoder_context_typedef *decoder_context, uint8_t *bit, uint
                 codeword |= icer_get_bit_from_codeword(decoder_context, num_bits+1) << num_bits;
                 num_bits++;
 #ifdef  DEBUG_PRINTS
-                printf("codeword: %d, bits: %d\n", codeword, num_bits+1);
+                printf("codeword: %d, bits: %d\n", codeword, num_bits);
 #endif
                 if (codeword < 32) {
                     if (custom_decode_scheme[bin][codeword].input_code_bits == num_bits) {

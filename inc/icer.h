@@ -25,7 +25,7 @@ uint32_t __inline __clz( uint32_t value ) {
 }
 #endif
 
-#define ICER_CIRC_BUF_SIZE 5
+#define ICER_CIRC_BUF_SIZE 2048
 #define MAX_K 12
 
 enum icer_status {

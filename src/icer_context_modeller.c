@@ -20,7 +20,7 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
     int category;
     bool bit;
     uint8_t lsb = pkt_context->lsb;
-    uint8_t mask = 0b1 << (lsb-1);
+    uint8_t mask = 0b1 << lsb;
 
     printf("max out: %zu\n", encoder_context->max_output_length);
 
@@ -153,9 +153,11 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
         }
         rowstart += rowstride;
     }
-    if (flush_encode(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) {
-        printf("end flush exceeded output size: %zu bytes\n", encoder_context->output_ind);
-        return ICER_BYTE_QUOTA_EXCEEDED;
+    while (encoder_context->used > 0) {
+        if (flush_encode(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) {
+            printf("end flush exceeded output size: %zu bytes\n", encoder_context->output_ind);
+            return ICER_BYTE_QUOTA_EXCEEDED;
+        }
     }
     return ICER_RESULT_OK;
 }
