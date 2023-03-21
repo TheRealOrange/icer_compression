@@ -33,6 +33,7 @@ void init_entropy_coder_context(encoder_context_typedef *encoder_context, uint16
 //#define DEBUG_PRINTS
 
 int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt) {
+
     uint16_t *curr_bin;
     if (zero_cnt < (total_cnt >> 1)) {
         /*

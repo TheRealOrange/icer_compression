@@ -48,8 +48,8 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
 
 int main() {
     setbuf(stdout, 0);
-    const size_t out_w = 256;
-    const size_t out_h = 256;
+    const size_t out_w = 128;
+    const size_t out_h = 128;
     const size_t out_channels = 1;
 
     int src_w, src_h, n;
@@ -136,7 +136,7 @@ int main() {
         pkt_context.subband_type = ICER_SUBBAND_HL;
         pkt_context.ll_mean_val = 0;
         pkt_context.subband_number = 0;
-/*
+
         if (compress_partition_uint8(datastart, &partition, out_w, &pkt_context, &output) == ICER_BYTE_QUOTA_EXCEEDED){
             printf("byte quota exceeded\n");
             break;
@@ -157,14 +157,14 @@ int main() {
         char temp_filename[100];
         snprintf(temp_filename, 100, "../aah_%d.bmp", i);
         stbi_write_bmp(temp_filename, out_w, out_h, 1, decoded);
-        printf("output size: %zu bytes\n", output.size_used);*/
+        printf("output size: %zu bytes\n", output.size_used);
 
     }
     //compare(datastart, decoded, 800*800);
     //stbi_write_bmp("../aaah.bmp", icer_floor_div_size_t(out_w, 2), icer_floor_div_size_t(out_h, 2), 1, decoded);
     stbi_write_bmp("../aaah.bmp", out_w, out_h, 1, decoded);
 #define RANDOM_SAMPLE
-#if 1
+#if 0
 #define TEST_LEN 8000
 #ifdef RANDOM_SAMPLE
     int *prob_a = malloc(TEST_LEN*sizeof(int));

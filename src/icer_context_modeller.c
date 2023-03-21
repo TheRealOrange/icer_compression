@@ -149,7 +149,7 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
 
             pos++;
             /* increment position pointers of 8 adjacent pixels */
-            h0++; h1++; v0++; v1++; d0++; d1++; d2++; d2++;
+            h0++; h1++; v0++; v1++; d0++; d1++; d2++; d3++;
         }
         rowstart += rowstride;
     }
@@ -277,8 +277,7 @@ int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, siz
                     sign_context = icer_sign_context_table[sh][sv];
                     pred_sign = icer_sign_prediction_table[sh][sv];
 
-                    icer_decode_bit(decoder_context, &agreement_bit, 1, 2);
-
+                    icer_decode_bit(decoder_context, &agreement_bit, context_model->zero_count[sign_context], context_model->total_count[sign_context]);
                     actual_sign = (agreement_bit ^ pred_sign) & 1;
                     (*pos) |= actual_sign << 7;
 
@@ -294,7 +293,7 @@ int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, siz
 
             pos++;
             /* increment position pointers of 8 adjacent pixels */
-            h0++; h1++; v0++; v1++; d0++; d1++; d2++; d2++;
+            h0++; h1++; v0++; v1++; d0++; d1++; d2++; d3++;
         }
         rowstart += rowstride;
     }
@@ -311,11 +310,11 @@ void init_context_model_vals(icer_context_model_typedef* context_model, enum ice
 }
 
 static inline uint8_t get_bit_category_uint8(const uint8_t* data, uint8_t lsb) {
-    return icer_min_int(__builtin_popcount(((*data) & 0x7f) >> lsb), 3);
+    return icer_min_int(__builtin_popcount(((*data) & 0x7f) >> (lsb+1)), 3);
 }
 
 static inline uint8_t get_bit_category_uint16(const uint16_t* data, uint8_t lsb) {
-    return icer_min_int(__builtin_popcount(((*data) & 0x7fff) >> lsb), 3);
+    return icer_min_int(__builtin_popcount(((*data) & 0x7fff) >> (lsb+1)), 3);
 }
 
 static inline bool get_bit_significance_uint8(const uint8_t* data, uint8_t lsb) {
