@@ -3,6 +3,7 @@
 //
 
 #include "icer.h"
+#include <string.h>
 
 packet_context packets[200];
 
@@ -166,6 +167,7 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
     size_t ll_h;
     size_t im_w = *image_w;
     size_t im_h = *image_h;
+    memset(image, 0, im_w * im_h * sizeof(image[0]));
     partition_param_typdef partition_params;
     for (uint8_t curr_stage = 1;curr_stage <= stages;curr_stage++) {
         printf("deccomp stage: %d\n", curr_stage);
