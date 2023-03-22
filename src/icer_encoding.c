@@ -261,11 +261,13 @@ int icer_allocate_data_packet(image_segment_typedef **pkt, output_data_buf_typed
     }
     (*pkt) = (image_segment_typedef *) (output_data->data_start + output_data->size_used);
     (*pkt)->preamble = ICER_PACKET_PREAMBLE;
-    (*pkt)->subband_number = context->subband_number;
+    (*pkt)->decomp_level = context->decomp_level;
     (*pkt)->subband_type = context->subband_type;
     (*pkt)->segment_number = segment_num;
     (*pkt)->lsb = context->lsb;
     (*pkt)->ll_mean_val = context->ll_mean_val;
+    (*pkt)->image_w = context->image_w;
+    (*pkt)->image_h = context->image_h;
     (*pkt)->crc32 = 0;
 
     output_data->size_used += sizeof(image_segment_typedef);

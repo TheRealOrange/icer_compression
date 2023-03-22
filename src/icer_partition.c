@@ -148,8 +148,8 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
     return ICER_RESULT_OK;
 }
 
-int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, packet_context *pkt_context,
-                               image_segment_typedef *seg) {
+int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride,
+                               image_segment_typedef *seg[][7]) {
     size_t segment_w, segment_h;
     uint8_t *segment_start;
     uint16_t segment_num = 0;
@@ -159,6 +159,8 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
 
     icer_context_model_typedef context_model;
     decoder_context_typedef context;
+    packet_context pkt_context;
+    int lsb = 6;
     /*
      * process top region which consists of c columns
      * height of top region is h_t and it contains r_t rows
@@ -180,10 +182,17 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
             segment_num++;
             partition_col_ind += segment_w;
 
-            init_context_model_vals(&context_model, pkt_context->subband_type);
-            printf("t segment no: %d\n", segment_num);
-            init_entropy_decoder_context(&context, (uint8_t*)seg + sizeof(image_segment_typedef), seg->data_length);
-            decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context);
+            lsb = 6;
+            while (seg[segment_num][lsb] != NULL && lsb >= 0) {
+                pkt_context.subband_type = seg[segment_num][6]->subband_type;
+                pkt_context.lsb = lsb;
+                pkt_context.decomp_level = seg[segment_num][6]->decomp_level;
+                init_context_model_vals(&context_model, pkt_context.subband_type);
+                printf("t segment no: %d\n", segment_num);
+                init_entropy_decoder_context(&context, (uint8_t*)seg[segment_num][lsb] + sizeof(image_segment_typedef), seg[segment_num][lsb]->data_length);
+                decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, &pkt_context);
+                lsb--;
+            }
         }
         partition_row_ind += segment_h;
     }
@@ -209,11 +218,17 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
             segment_num++;
             partition_col_ind += segment_w;
 
-            init_context_model_vals(&context_model, pkt_context->subband_type);
-            printf("t segment no: %d\n", segment_num);
-            init_entropy_decoder_context(&context, (uint8_t*)seg + sizeof(image_segment_typedef), seg->data_length);
-            decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context);
-
+            lsb = 6;
+            while (seg[segment_num][lsb] != NULL && lsb >= 0) {
+                pkt_context.subband_type = seg[segment_num][6]->subband_type;
+                pkt_context.lsb = lsb;
+                pkt_context.decomp_level = seg[segment_num][6]->decomp_level;
+                init_context_model_vals(&context_model, pkt_context.subband_type);
+                printf("t segment no: %d\n", segment_num);
+                init_entropy_decoder_context(&context, (uint8_t*)seg[segment_num][lsb] + sizeof(image_segment_typedef), seg[segment_num][lsb]->data_length);
+                decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, &pkt_context);
+                lsb--;
+            }
         }
         partition_row_ind += segment_h;
     }

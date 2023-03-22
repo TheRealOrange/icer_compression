@@ -58,6 +58,7 @@ enum icer_filter_params {
 };
 
 #define ICER_MAX_SEGMENTS 32
+#define ICER_MAX_DECOMP_STAGES 6
 #define ICER_FILTER_DENOMINATOR 16
 
 typedef struct {
@@ -122,11 +123,12 @@ enum icer_pixel_categories {
     ICER_CATEGORY_3 = 3
 };
 
+#define ICER_SUBBAND_MAX 3
 enum icer_subband_types {
     ICER_SUBBAND_LL = 0,
     ICER_SUBBAND_HL,
     ICER_SUBBAND_LH,
-    ICER_SUBBAND_HH
+    ICER_SUBBAND_HH = ICER_SUBBAND_MAX
 };
 
 typedef struct {
@@ -197,21 +199,28 @@ typedef struct {
 extern golomb_code_typedef golomb_coders[ICER_ENCODER_BIN_MAX+1];
 
 typedef struct {
-    uint16_t subband_number;
+    uint8_t decomp_level;
     uint8_t subband_type;
     uint8_t ll_mean_val;
     uint8_t lsb;
+    uint32_t priority;
+    size_t image_w;
+    size_t image_h;
 } packet_context;
+
+extern packet_context packets[200];
 
 #define ICER_PACKET_PREAMBLE 0x605B
 
 typedef struct {
     uint16_t preamble;
-    uint16_t subband_number;
+    uint16_t ll_mean_val;
+    uint8_t decomp_level;
     uint8_t subband_type;
     uint8_t segment_number;
     uint8_t lsb;
-    uint8_t ll_mean_val;
+    uint32_t image_w;
+    uint32_t image_h;
     uint32_t data_length; // store data length in bits for the decoder
     uint32_t crc32;
 } image_segment_typedef;
@@ -250,11 +259,20 @@ typedef struct {
     size_t bin_decode_index[ICER_ENCODER_BIN_MAX+1];
 } decoder_context_typedef;
 
+extern image_segment_typedef *reconstruct_data[ICER_MAX_DECOMP_STAGES+1][ICER_SUBBAND_MAX+1][ICER_MAX_SEGMENTS+1][7];
+
 int icer_init();
 void icer_init_decodescheme();
 void icer_init_codingscheme();
 void icer_init_flushbits();
 void icer_init_golombcoder();
+
+int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt,
+                          uint8_t segments, output_data_buf_typedef *output_data);
+int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, uint8_t *datastream,
+                                size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments);
+
+size_t icer_find_packet_in_bytestream(image_segment_typedef *seg, uint8_t *datastream, size_t data_length);
 
 int icer_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
 int icer_inverse_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
@@ -271,6 +289,8 @@ void icer_interleave_uint8(uint8_t *data, size_t len, size_t stride);
 void icer_deinterleave_uint8(uint8_t *data, size_t len, size_t stride);
 
 uint8_t icer_find_k(size_t len);
+size_t get_dim_n_low_stages(size_t dim, uint8_t stages);
+size_t get_dim_n_high_stages(size_t dim, uint8_t stages);
 
 
 int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, packet_context *pkt_context,
@@ -280,8 +300,8 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
                             encoder_context_typedef *encoder_context,
                             packet_context *pkt_context);
 
-int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, packet_context *pkt_context,
-                               image_segment_typedef *seg);
+int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride,
+                               image_segment_typedef *seg[][7]);
 int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                               icer_context_model_typedef *context_model,
                               decoder_context_typedef *decoder_context,

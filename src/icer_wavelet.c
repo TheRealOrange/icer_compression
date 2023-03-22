@@ -23,7 +23,6 @@ int icer_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h
         low_h = low_h / 2 + low_h % 2;
     }
 
-    icer_to_sign_magnitude_int8(image, image_w * image_h);
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
 
@@ -34,8 +33,8 @@ int icer_inverse_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t
     size_t low_h;
     uint8_t decomps;
 
-    size_t smallest_w = icer_ceil_div_size_t(image_w, icer_pow_uint(2, stages));
-    size_t smallest_h = icer_ceil_div_size_t(image_h, icer_pow_uint(2, stages));
+    size_t smallest_w = get_dim_n_low_stages(image_w, stages);
+    size_t smallest_h = get_dim_n_low_stages(image_h, stages);
 
     if (smallest_w < 3 || smallest_h < 3) {
         return ICER_TOO_MANY_STAGES;
@@ -44,11 +43,19 @@ int icer_inverse_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t
     icer_from_sign_magnitude_int8(image, image_w * image_h);
     for (uint8_t it = 1; it <= stages; it++) {
         decomps = stages - it;
-        low_w = icer_ceil_div_size_t(image_w, icer_pow_uint(2, decomps));
-        low_h = icer_ceil_div_size_t(image_h, icer_pow_uint(2, decomps));
+        low_w = get_dim_n_low_stages(image_w, decomps);
+        low_h = get_dim_n_low_stages(image_h, decomps);
         overflow |= icer_inverse_wavelet_transform_2d_uint8(image, low_w, low_h, image_w, filt);
     }
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
+}
+
+size_t get_dim_n_low_stages(size_t dim, uint8_t stages) {
+    return icer_ceil_div_size_t(dim, icer_pow_uint(2, stages));
+}
+
+size_t get_dim_n_high_stages(size_t dim, uint8_t stages) {
+    return icer_floor_div_size_t(dim, icer_pow_uint(2, stages));
 }
 
 int icer_wavelet_transform_2d_uint8(uint8_t *image, size_t image_w, size_t image_h, size_t rowstride,
