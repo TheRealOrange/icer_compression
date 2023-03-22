@@ -89,16 +89,13 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
             partition_col_ind += segment_w;
 
             init_context_model_vals(&context_model, pkt_context->subband_type);
-            printf("t segment no: %d\n", segment_num);
             if (icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
-            printf("max seg out: %u\n", seg->data_length);
             init_entropy_coder_context(&context, encode_circ_buf, 2048, (uint8_t*)seg + sizeof(image_segment_typedef), seg->data_length);
             if (compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
                 data_in_bytes = context.output_ind + (context.output_bit_offset > 0);
                 output_data->size_used += data_in_bytes;
-                printf("exceeded seg out: %zu\n", output_data->size_used);
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
             data_in_bytes = context.output_ind + (context.output_bit_offset > 0);
@@ -131,7 +128,6 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
             partition_col_ind += segment_w;
 
             init_context_model_vals(&context_model, pkt_context->subband_type);
-            printf("b segment no: %d\n", segment_num);
             if (icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
@@ -188,7 +184,6 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
                 pkt_context.lsb = lsb;
                 pkt_context.decomp_level = seg[segment_num][6]->decomp_level;
                 init_context_model_vals(&context_model, pkt_context.subband_type);
-                printf("t segment no: %d\n", segment_num);
                 init_entropy_decoder_context(&context, (uint8_t*)seg[segment_num][lsb] + sizeof(image_segment_typedef), seg[segment_num][lsb]->data_length);
                 decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, &pkt_context);
                 lsb--;
@@ -224,7 +219,6 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
                 pkt_context.lsb = lsb;
                 pkt_context.decomp_level = seg[segment_num][6]->decomp_level;
                 init_context_model_vals(&context_model, pkt_context.subband_type);
-                printf("t segment no: %d\n", segment_num);
                 init_entropy_decoder_context(&context, (uint8_t*)seg[segment_num][lsb] + sizeof(image_segment_typedef), seg[segment_num][lsb]->data_length);
                 decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, &pkt_context);
                 lsb--;

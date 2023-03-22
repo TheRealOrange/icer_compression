@@ -22,7 +22,7 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
     uint8_t lsb = pkt_context->lsb;
     uint8_t mask = 0b1 << lsb;
 
-    printf("max out: %zu\n", encoder_context->max_output_length);
+    //printf("max out: %zu\n", encoder_context->max_output_length);
 
     uint8_t *h0, *h1, *v0, *v1, *d0, *d1, *d2, *d3;
     uint8_t h, v, d, tmp;

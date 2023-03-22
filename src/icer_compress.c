@@ -84,7 +84,7 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
 
     priority = icer_pow_uint(stages, 2);
     for (uint8_t lsb = 0;lsb < 7;lsb++) {
-        packets[ind].subband_type = ICER_SUBBAND_HL;
+        packets[ind].subband_type = ICER_SUBBAND_LL;
         packets[ind].decomp_level = stages;
         packets[ind].ll_mean_val = ll_mean;
         packets[ind].lsb = lsb;
@@ -146,9 +146,9 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
     uint16_t ll_mean;
     while ((data_length - offset) > 0) {
         data_start = datastream + offset;
-        res = icer_find_packet_in_bytestream(seg, data_start, data_length - offset);
+        res = icer_find_packet_in_bytestream(&seg, data_start, data_length - offset);
         if (seg != NULL) {
-            offset = res;
+            offset += res+1;
             reconstruct_data[seg->decomp_level][seg->subband_type][seg->segment_number][seg->lsb] = seg;
             *image_w = seg->image_w;
             *image_h = seg->image_h;
@@ -219,20 +219,24 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
     }
 
     icer_inverse_wavelet_transform_stages(image, im_w, im_h, stages, filt);
+    return ICER_RESULT_OK;
 }
 
-size_t icer_find_packet_in_bytestream(image_segment_typedef *seg, uint8_t *datastream, size_t data_length) {
+size_t icer_find_packet_in_bytestream(image_segment_typedef **seg, uint8_t *datastream, size_t data_length) {
     size_t offset = 0;
-    uint16_t *start;
+    (*seg) = NULL;
     while (offset < data_length) {
-        start = (uint16_t*)(datastream + offset);
-        if ((*start) == ICER_PACKET_PREAMBLE) {
-            seg = (image_segment_typedef*)start;
-            if (seg->crc32 == icer_calculate_packet_crc32(seg) && icer_ceil_div_uint32(seg->data_length, 8) <= (data_length-offset-sizeof(image_segment_typedef))) {
-                return offset;
+        (*seg) = (image_segment_typedef*)(datastream + offset);
+        if ((*seg)->preamble == ICER_PACKET_PREAMBLE) {
+            if ((*seg)->crc32 == icer_calculate_packet_crc32((*seg))) {
+               if (icer_ceil_div_uint32((*seg)->data_length, 8) <= (data_length-offset-sizeof(image_segment_typedef))) {
+                 return offset;
+               }
             } else {
-                seg = NULL;
+              (*seg) = NULL;
             }
+        } else {
+          (*seg) = NULL;
         }
         offset++;
     }

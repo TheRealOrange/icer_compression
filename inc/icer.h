@@ -272,7 +272,7 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
 int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, uint8_t *datastream,
                                 size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments);
 
-size_t icer_find_packet_in_bytestream(image_segment_typedef *seg, uint8_t *datastream, size_t data_length);
+size_t icer_find_packet_in_bytestream(image_segment_typedef **seg, uint8_t *datastream, size_t data_length);
 
 int icer_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
 int icer_inverse_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);

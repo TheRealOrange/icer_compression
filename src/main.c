@@ -48,8 +48,8 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
 
 int main() {
     setbuf(stdout, 0);
-    const size_t out_w = 512;
-    const size_t out_h = 512;
+    const size_t out_w = 1024;
+    const size_t out_h = 1024;
     const size_t out_channels = 1;
 
     int src_w, src_h, n;
@@ -105,19 +105,37 @@ int main() {
 
     reduce_bit_depth(compress, out_w*out_h*out_channels, bit_red);
 
-    const int datastream_size = 10000000;
+    const int datastream_size = 30000;
     uint8_t *datastream = malloc(datastream_size);
     output_data_buf_typedef output;
     icer_init_output_struct(&output, datastream, datastream_size);
-    icer_compress_image_uint8(compress, out_w, out_h, 3, ICER_FILTER_A, 5, &output);
-    size_t decomp_w, decomp_h;
-    icer_decompress_image_uint8(decompress, &decomp_w, &decomp_h, out_w*out_h, output.data_start, output.size_used, 3, ICER_FILTER_A, 5);
+    begin = clock();
+    icer_compress_image_uint8(compress, out_w, out_h, 5, ICER_FILTER_A, 5, &output);
+    end = clock();
 
-    printf("saving decompressed image to: \"%s\"\n", wavelet_filename);
-    res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, decompress);
+    printf("compressed size %zu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
+
+    size_t decomp_w, decomp_h;
+    begin = clock();
+    icer_decompress_image_uint8(decompress, &decomp_w, &decomp_h, out_w*out_h, output.data_start, output.size_used, 5, ICER_FILTER_A, 5);
+    end = clock();
+    printf("decompress time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
+
+    printf("saving decompressed image to: \"%s\"\n", wavelet_inv_filename);
+    increase_bit_depth(decompress, out_w*out_h, bit_red);
+    res = stbi_write_bmp(wavelet_inv_filename, out_w, out_h, out_channels, decompress);
     if (res == 0) {
         printf("save failed\nexiting...\n");
         return 0;
+    }
+
+    reduce_bit_depth(resized, out_w*out_h*out_channels, bit_red);
+    icer_wavelet_transform_stages(resized, out_w, out_h, 5, ICER_FILTER_A);
+    printf("saving transformed image to: \"%s\"\n", wavelet_filename);
+    res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, resized);
+    if (res == 0) {
+      printf("save failed\nexiting...\n");
+      return 0;
     }
 
     if (compare(compress, resized, out_w*out_h*out_channels)) {
