@@ -1,6 +1,8 @@
 # ICER Image Compression Algorithm
 
-The code in this repository implements the NASA ICER image compression algorithm. Said compression algorithm is a progressive, wavelet-based image compression algorithm designed to be resistant to data loss, making it suitable for use as the image compression algorithm when encoding images to be transmitted over unreliable delivery channels, such as those in satellite radio communications.
+The code in this repository implements the NASA ICER image compression algorithm as a C library. Said compression algorithm is a progressive, wavelet-based image compression algorithm designed to be resistant to data loss, making it suitable for use as the image compression algorithm when encoding images to be transmitted over unreliable delivery channels, such as those in satellite radio communications.
+
+This library was designed with memory-constrained embedded systems in mind, hence the language choice of C, but it should function just as well on normal machines.
 
 
 
@@ -74,5 +76,5 @@ To run the example code, simply build it and place the `boat.512.bmp` image as t
 
 ### Note: Work in progress!
 
-This project is still a work in progress! Currently, images of a bit depth of 5-6 bits per pixel are supported, because the wavelet transform produces an increased dynamic range which can cause overflows. Encoding in a 16-bit word will allow for a greater bit depth per pixel. Colour image support is also yet to be implemented.
+This project is still a work in progress! Currently, images of a bit depth of 5-6 bits per pixel are supported, because the wavelet transform produces an increased dynamic range which can cause overflows. Encoding in a 16-bit word will allow for a greater bit depth per pixel, and such functions have been implemented but as of yet are untested Colour image support is also yet to be implemented.
 
