@@ -171,14 +171,14 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
     memset(image, 0, im_w * im_h * sizeof(image[0]));
     partition_param_typdef partition_params;
     for (uint8_t curr_stage = 1;curr_stage <= stages;curr_stage++) {
-        printf("deccomp stage: %d\n", curr_stage);
         if (curr_stage == stages) {
             /* LL subband */
             ll_w = icer_get_dim_n_low_stages(im_w, curr_stage);
             ll_h = icer_get_dim_n_low_stages(im_h, curr_stage);
             data_start = image;
 
-            icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
+            res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
+            if (res != ICER_RESULT_OK) return res;
             icer_decompress_partition_uint8(data_start, &partition_params, im_w,
                                             icer_reconstruct_data[curr_stage][ICER_SUBBAND_LL]);
         }
@@ -188,7 +188,8 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
         ll_h = icer_get_dim_n_low_stages(im_h, curr_stage);
         data_start = image + icer_get_dim_n_low_stages(im_w, curr_stage);
 
-        icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
+        res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
+        if (res != ICER_RESULT_OK) return res;
         icer_decompress_partition_uint8(data_start, &partition_params, im_w,
                                         icer_reconstruct_data[curr_stage][ICER_SUBBAND_HL]);
 
@@ -197,7 +198,8 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
         ll_h = icer_get_dim_n_high_stages(im_h, curr_stage);
         data_start = image + icer_get_dim_n_low_stages(im_h, curr_stage) * im_w;
 
-        icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
+        res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
+        if (res != ICER_RESULT_OK) return res;
         icer_decompress_partition_uint8(data_start, &partition_params, im_w,
                                         icer_reconstruct_data[curr_stage][ICER_SUBBAND_LH]);
 
@@ -206,7 +208,8 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
         ll_h = icer_get_dim_n_high_stages(im_h, curr_stage);
         data_start = image + icer_get_dim_n_low_stages(im_h, curr_stage) * im_w + icer_get_dim_n_low_stages(im_w, curr_stage);
 
-        icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
+        res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
+        if (res != ICER_RESULT_OK) return res;
         icer_decompress_partition_uint8(data_start, &partition_params, im_w,
                                         icer_reconstruct_data[curr_stage][ICER_SUBBAND_HH]);
     }

@@ -55,6 +55,7 @@ int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll
 
 int icer_compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
                                   icer_output_data_buf_typedef *output_data) {
+    int res;
     size_t segment_w, segment_h;
     uint8_t *segment_start;
     uint16_t segment_num = 0;
@@ -88,17 +89,18 @@ int icer_compress_partition_uint8(uint8_t *data, partition_param_typdef *params,
             partition_col_ind += segment_w;
 
             icer_init_context_model_vals(&context_model, pkt_context->subband_type);
-            if (icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
-                return ICER_BYTE_QUOTA_EXCEEDED;
-            }
+            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context);
+            if (res != ICER_RESULT_OK) return res;
+
             icer_init_entropy_coder_context(&context, icer_encode_circ_buf, ICER_CIRC_BUF_SIZE,
                                             (uint8_t *) seg + sizeof(icer_image_segment_typedef), seg->data_length);
-            if (icer_compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
-                                             pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
+            res = icer_compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
+                                             pkt_context);
+            if (res != ICER_RESULT_OK) {
                 output_data->size_used -= sizeof(icer_image_segment_typedef);
-                printf("output size used: %zu\n", output_data->size_used);
-                return ICER_BYTE_QUOTA_EXCEEDED;
+                return res;
             }
+
             data_in_bytes = context.output_ind + (context.output_bit_offset > 0);
             seg->data_length = context.output_ind * 8 + context.output_bit_offset;
             seg->data_crc32 = icer_calculate_segment_crc32(seg);
@@ -131,17 +133,18 @@ int icer_compress_partition_uint8(uint8_t *data, partition_param_typdef *params,
             partition_col_ind += segment_w;
 
             icer_init_context_model_vals(&context_model, pkt_context->subband_type);
-            if (icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
-                return ICER_BYTE_QUOTA_EXCEEDED;
-            }
+            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context);
+            if (res != ICER_RESULT_OK) return res;
+
             icer_init_entropy_coder_context(&context, icer_encode_circ_buf, ICER_CIRC_BUF_SIZE,
                                             (uint8_t *) seg + sizeof(icer_image_segment_typedef), seg->data_length);
-            if (icer_compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
-                                             pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
+            res = icer_compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
+                                             pkt_context);
+            if (res != ICER_RESULT_OK) {
                 output_data->size_used -= sizeof(icer_image_segment_typedef);
-                printf("output size used: %zu\n", output_data->size_used);
-                return ICER_BYTE_QUOTA_EXCEEDED;
+                return res;
             }
+
             data_in_bytes = context.output_ind + (context.output_bit_offset > 0);
             seg->data_length = context.output_ind * 8 + context.output_bit_offset;
             seg->data_crc32 = icer_calculate_segment_crc32(seg);
@@ -158,6 +161,7 @@ int icer_compress_partition_uint8(uint8_t *data, partition_param_typdef *params,
 
 int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride,
                                     icer_image_segment_typedef *seg[][7]) {
+    int res;
     size_t segment_w, segment_h;
     uint8_t *segment_start;
     uint16_t segment_num = 0;
@@ -198,8 +202,9 @@ int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *param
                 icer_init_entropy_decoder_context(&context, (uint8_t *) seg[segment_num][lsb] +
                                                             sizeof(icer_image_segment_typedef),
                                                   seg[segment_num][lsb]->data_length);
-                icer_decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
+                res = icer_decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
                                                &pkt_context);
+                if (res != ICER_RESULT_OK) break;
                 lsb--;
             }
 
@@ -237,8 +242,9 @@ int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *param
                 icer_init_entropy_decoder_context(&context, (uint8_t *) seg[segment_num][lsb] +
                                                             sizeof(icer_image_segment_typedef),
                                                   seg[segment_num][lsb]->data_length);
-                icer_decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
+                res = icer_decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
                                                &pkt_context);
+                if (res != ICER_RESULT_OK) break;
                 lsb--;
             }
 

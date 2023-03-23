@@ -18,4 +18,4 @@ add_subdirectory(lib_icer)
 add_executable(icer_compression example/src/main.c example/inc/stb_image_write.h example/inc/stb_image.h example/src/stb_lib.c example/inc/stb_image_resize.h)
 
 target_link_libraries(icer_compression PRIVATE m)
-target_link_libraries(icer_compression PRIVATE lib_icer)
+target_link_libraries(icer_compression PUBLIC icer)

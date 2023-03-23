@@ -117,7 +117,6 @@ int icer_popbuf_while_avail(icer_encoder_context_typedef *encoder_context) {
         bits = out >> ICER_ENC_BUF_BITS_OFFSET;
         while (bits) {
             bits_to_encode = icer_min_int(8-encoder_context->output_bit_offset, bits);
-            //mask = INT16_MIN >> (bits_to_encode-1);
             encoder_context->output_buffer[encoder_context->output_ind] |= (out & ((1 << bits_to_encode) - 1)) << (encoder_context->output_bit_offset);
             out >>= bits_to_encode;
             bits -= bits_to_encode;
@@ -137,7 +136,6 @@ int icer_popbuf_while_avail(icer_encoder_context_typedef *encoder_context) {
 }
 
 int icer_flush_encode(icer_encoder_context_typedef *encoder_context) {
-    //printf("to flush: %3zu codewords\n", encoder_context->used);
     uint16_t *first = encoder_context->encode_buffer + encoder_context->head;
     icer_custom_flush_typedef *flush;
     uint16_t prefix;

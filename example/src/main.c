@@ -29,7 +29,12 @@ void increase_bit_depth(unsigned char *buf, size_t len, uint8_t bits) {
     int b;
     for (;it < (buf+len);it++) {
         b = 0;
-        while (b < bits && (((*it) << 1) > (*it))) {
+        while (b < bits) {
+            unsigned char t = (*it) << 1;
+            if (t <= (*it)) {
+                (*it) = 0xff;
+                break;
+            }
             (*it) <<= 1;
             b++;
         }
@@ -45,7 +50,7 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
             identical = false;
         }
     }
-    printf("total differences: %zu\n", cnt);
+    printf("total differences: %llu\n", cnt);
 
     return identical;
 }
@@ -53,14 +58,13 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
 int main() {
     const size_t out_w = 2000;
     const size_t out_h = 3000;
-    const size_t out_channels = 1;
 
     int src_w, src_h, n;
     uint8_t *data;
 
-    uint8_t *resized = malloc(out_w*out_h*out_channels);
-    uint8_t *compress = malloc(out_w*out_h*out_channels);
-    uint8_t *decompress = malloc(out_w*out_h*out_channels);
+    uint8_t *resized = malloc(out_w*out_h);
+    uint8_t *compress = malloc(out_w*out_h);
+    uint8_t *decompress = malloc(out_w*out_h);
 
     int res = 0;
     clock_t begin, end;
@@ -70,45 +74,45 @@ int main() {
     printf("test compression code\n");
 
     printf("loading image: \"%s\"\n", filename);
-    data = stbi_load(filename, &src_w, &src_h, &n, out_channels);
+    data = stbi_load(filename, &src_w, &src_h, &n, 1);
     if (data == NULL) {
         printf("invalid image\nexiting...\n");
         return 0;
     }
 
-    printf("loaded image\nwidth    : %5d\nheight   : %5d\nchannels : %5d\nout_chn  : %5zu\n", src_w, src_h, n, out_channels);
+    printf("loaded image\nwidth    : %5d\nheight   : %5d\nchannels : %5d\n", src_w, src_h, n);
 
-    printf("resizing image to width: %4zu, height: %4zu\n", out_w, out_h);
+    printf("resizing image to width: %4llu, height: %4llu\n", out_w, out_h);
     res = stbir_resize_uint8(data, src_w, src_h, 0,
                              resized, out_w, out_h, 0,
-                             out_channels);
+                             1);
     if (res == 0) {
         printf("resize failed\nexiting...\n");
         return 0;
     }
 
     printf("saving resized image to: \"%s\"\n", resized_filename);
-    res = stbi_write_bmp(resized_filename, out_w, out_h, out_channels, resized);
+    res = stbi_write_bmp(resized_filename, out_w, out_h, 1, resized);
     if (res == 0) {
         printf("save failed\nexiting...\n");
         return 0;
     }
     int bit_red = 2;
-    reduce_bit_depth(resized, out_w*out_h*out_channels, bit_red);
-    increase_bit_depth(resized, out_w*out_h*out_channels, bit_red);
+    reduce_bit_depth(resized, out_w*out_h, bit_red);
+    increase_bit_depth(resized, out_w*out_h, bit_red);
 
     printf("saving bit-depth reduced image to: \"%s\"\n", resized_6bpp_filename);
-    res = stbi_write_bmp(resized_6bpp_filename, out_w, out_h, out_channels, resized);
+    res = stbi_write_bmp(resized_6bpp_filename, out_w, out_h, 1, resized);
     if (res == 0) {
         printf("save failed\nexiting...\n");
         return 0;
     }
 
-    memcpy(compress, resized, out_h*out_w*out_channels);
+    memcpy(compress, resized, out_h*out_w);
 
-    reduce_bit_depth(compress, out_w*out_h*out_channels, bit_red);
+    reduce_bit_depth(compress, out_w*out_h, bit_red);
 
-    const int datastream_size = 5000000;
+    const int datastream_size = 200000;
     uint8_t *datastream = malloc(datastream_size+100);
     icer_output_data_buf_typedef output;
     icer_init_output_struct(&output, datastream, datastream_size);
@@ -116,13 +120,13 @@ int main() {
     icer_compress_image_uint8(compress, out_w, out_h, 6, ICER_FILTER_F, 20, &output);
     end = clock();
 
-    printf("compressed size %zu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
+    printf("compressed size %llu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
 
     FILE *ptr1;
 
     ptr1 = fopen("../compressed.bin","wb");
     size_t written = fwrite(output.data_start, sizeof(output.data_start[0]), output.size_used, ptr1);
-    printf("written: %zu\n", written);
+    printf("written: %llu\n", written);
     fflush(ptr1);
     fclose(ptr1);
 
@@ -153,22 +157,22 @@ int main() {
 
     printf("saving decompressed image to: \"%s\"\n", wavelet_inv_filename);
     increase_bit_depth(decompress, out_w*out_h, bit_red);
-    res = stbi_write_bmp(wavelet_inv_filename, out_w, out_h, out_channels, decompress);
+    res = stbi_write_bmp(wavelet_inv_filename, out_w, out_h, 1, decompress);
     if (res == 0) {
         printf("save failed\nexiting...\n");
         return 0;
     }
 
-    if (compare(decompress, resized, out_w*out_h*out_channels)) {
+    if (compare(decompress, resized, out_w*out_h)) {
         printf("result is identical\n");
     } else {
         printf("result is different\n");
     }
 
-    reduce_bit_depth(resized, out_w*out_h*out_channels, bit_red);
+    reduce_bit_depth(resized, out_w*out_h, bit_red);
     icer_wavelet_transform_stages(resized, out_w, out_h, 6, ICER_FILTER_A);
     printf("saving transformed image to: \"%s\"\n", wavelet_filename);
-    res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, resized);
+    res = stbi_write_bmp(wavelet_filename, out_w, out_h, 1, resized);
     if (res == 0) {
       printf("save failed\nexiting...\n");
       return 0;
