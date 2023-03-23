@@ -156,6 +156,7 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
     while (encoder_context->used > 0) {
         if (flush_encode(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) {
             printf("end flush exceeded output size: %zu bytes\n", encoder_context->output_ind);
+            printf("lsb: %d, decomp: %d, subband: %d\n", pkt_context->lsb, pkt_context->decomp_level, pkt_context->subband_type);
             return ICER_BYTE_QUOTA_EXCEEDED;
         }
     }

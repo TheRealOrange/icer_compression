@@ -85,7 +85,6 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
              */
             segment_w = params->x_t + ((col >= params->c_t0) ? 1 : 0);
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
-            segment_num++;
             partition_col_ind += segment_w;
 
             init_context_model_vals(&context_model, pkt_context->subband_type);
@@ -94,6 +93,8 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
             }
             init_entropy_coder_context(&context, encode_circ_buf, ICER_CIRC_BUF_SIZE, (uint8_t*)seg + sizeof(image_segment_typedef), seg->data_length);
             if (compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
+                output_data->size_used -= sizeof(image_segment_typedef);
+                printf("output size used: %zu\n", output_data->size_used);
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
             data_in_bytes = context.output_ind + (context.output_bit_offset > 0);
@@ -101,6 +102,8 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
             seg->data_crc32 = icer_calculate_segment_crc32(seg);
             seg->crc32 = icer_calculate_packet_crc32(seg);
             output_data->size_used += data_in_bytes;
+
+            segment_num++;
         }
         partition_row_ind += segment_h;
     }
@@ -123,7 +126,6 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
              */
             segment_w = params->x_b + ((col >= params->c_b0) ? 1 : 0);
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
-            segment_num++;
             partition_col_ind += segment_w;
 
             init_context_model_vals(&context_model, pkt_context->subband_type);
@@ -131,12 +133,18 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
             init_entropy_coder_context(&context, encode_circ_buf, ICER_CIRC_BUF_SIZE, (uint8_t*)seg + sizeof(image_segment_typedef), seg->data_length);
-            if (compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
+            if (compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
+                output_data->size_used -= sizeof(image_segment_typedef);
+                printf("output size used: %zu\n", output_data->size_used);
+                return ICER_BYTE_QUOTA_EXCEEDED;
+            }
             data_in_bytes = context.output_ind + (context.output_bit_offset > 0);
             seg->data_length = context.output_ind * 8 + context.output_bit_offset;
             seg->data_crc32 = icer_calculate_segment_crc32(seg);
             seg->crc32 = icer_calculate_packet_crc32(seg);
             output_data->size_used += data_in_bytes;
+
+            segment_num++;
         }
         partition_row_ind += segment_h;
     }
@@ -175,7 +183,6 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
              */
             segment_w = params->x_t + ((col >= params->c_t0) ? 1 : 0);
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
-            segment_num++;
             partition_col_ind += segment_w;
 
             lsb = 6;
@@ -188,6 +195,8 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
                 decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, &pkt_context);
                 lsb--;
             }
+
+            segment_num++;
         }
         partition_row_ind += segment_h;
     }
@@ -210,7 +219,6 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
              */
             segment_w = params->x_b + ((col >= params->c_b0) ? 1 : 0);
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
-            segment_num++;
             partition_col_ind += segment_w;
 
             lsb = 6;
@@ -223,6 +231,8 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
                 decompress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, &pkt_context);
                 lsb--;
             }
+
+            segment_num++;
         }
         partition_row_ind += segment_h;
     }

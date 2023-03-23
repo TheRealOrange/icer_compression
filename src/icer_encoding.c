@@ -268,6 +268,7 @@ int icer_allocate_data_packet(image_segment_typedef **pkt, output_data_buf_typed
     (*pkt)->ll_mean_val = context->ll_mean_val;
     (*pkt)->image_w = context->image_w;
     (*pkt)->image_h = context->image_h;
+    (*pkt)->data_crc32 = 0;
     (*pkt)->crc32 = 0;
 
     output_data->size_used += sizeof(image_segment_typedef);

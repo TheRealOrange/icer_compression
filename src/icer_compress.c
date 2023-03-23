@@ -52,7 +52,7 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
     uint32_t priority = 0;
     uint32_t ind = 0;
     for (uint8_t curr_stage = 1;curr_stage <= stages;curr_stage++) {
-        priority = icer_pow_uint(curr_stage, 2);
+        priority = icer_pow_uint(2, curr_stage);
         for (uint8_t lsb = 0;lsb < 7;lsb++) {
             packets[ind].subband_type = ICER_SUBBAND_HL;
             packets[ind].decomp_level = curr_stage;
@@ -76,14 +76,14 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
             packets[ind].decomp_level = curr_stage;
             packets[ind].ll_mean_val = ll_mean;
             packets[ind].lsb = lsb;
-            packets[ind].priority = (priority/2) << lsb;
+            packets[ind].priority = ((priority/2) << lsb) + 1;
             packets[ind].image_w = image_w;
             packets[ind].image_h = image_h;
             ind++;
         }
     }
 
-    priority = icer_pow_uint(stages, 2);
+    priority = icer_pow_uint(2, stages);
     for (uint8_t lsb = 0;lsb < 7;lsb++) {
         packets[ind].subband_type = ICER_SUBBAND_LL;
         packets[ind].decomp_level = stages;
@@ -98,7 +98,7 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
     qsort(packets, ind, sizeof(packet_context), comp_packet);
 
     partition_param_typdef partition_params;
-    uint8_t *data_start;
+    uint8_t *data_start = image;
     for (size_t it = 0;it < ind;it++) {
         if (packets[it].subband_type == ICER_SUBBAND_LL) {
             ll_w = get_dim_n_low_stages(image_w, packets[it].decomp_level);
@@ -120,7 +120,9 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
 
         icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         res = compress_partition_uint8(data_start, &partition_params, image_w, &(packets[it]), output_data);
-        if (res != ICER_RESULT_OK) return res;
+        if (res != ICER_RESULT_OK) {
+            return res;
+        }
     }
 
     return ICER_RESULT_OK;
@@ -144,19 +146,17 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
     uint8_t *data_start;
     size_t offset = 0;
     size_t res;
-    uint16_t ll_mean;
+    uint16_t ll_mean = 0;
     while ((data_length - offset) > 0) {
         data_start = datastream + offset;
         res = icer_find_packet_in_bytestream(&seg, data_start, data_length - offset);
         if (seg != NULL) {
-            offset += res+1;
             reconstruct_data[seg->decomp_level][seg->subband_type][seg->segment_number][seg->lsb] = seg;
             *image_w = seg->image_w;
             *image_h = seg->image_h;
             ll_mean = seg->ll_mean_val;
-        } else {
-            offset++;
         }
+        offset += res;
     }
 
     if (image_bufsize < (*image_w) * (*image_h)) {
@@ -233,7 +233,7 @@ size_t icer_find_packet_in_bytestream(image_segment_typedef **seg, uint8_t *data
             if ((*seg)->crc32 == icer_calculate_packet_crc32((*seg))) {
                if (icer_ceil_div_uint32((*seg)->data_length, 8) <= (data_length-offset-sizeof(image_segment_typedef))) {
                    if((*seg)->data_crc32 == icer_calculate_segment_crc32((*seg))) {
-                       return offset + icer_ceil_div_uint32((*seg)->data_length, 8);
+                       return offset + icer_ceil_div_uint32((*seg)->data_length, 8) + sizeof(image_segment_typedef);
                    }
                }
             }
@@ -241,5 +241,5 @@ size_t icer_find_packet_in_bytestream(image_segment_typedef **seg, uint8_t *data
         (*seg) = NULL;
         offset++;
     }
-    return 0;
+    return 1;
 }

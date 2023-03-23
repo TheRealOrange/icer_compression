@@ -27,8 +27,13 @@ void reduce_bit_depth(unsigned char *buf, size_t len, uint8_t bits) {
 
 void increase_bit_depth(unsigned char *buf, size_t len, uint8_t bits) {
     unsigned char *it = buf;
+    int b;
     for (;it < (buf+len);it++) {
-        (*it) <<= bits;
+        b = 0;
+        while (b < bits && (((*it) << 1) > (*it))) {
+            (*it) <<= 1;
+            b++;
+        }
     }
 }
 
@@ -47,9 +52,8 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
 }
 
 int main() {
-    setbuf(stdout, 0);
-    const size_t out_w = 512;
-    const size_t out_h = 512;
+    const size_t out_w = 800;
+    const size_t out_h = 600;
     const size_t out_channels = 1;
 
     int src_w, src_h, n;
@@ -105,20 +109,25 @@ int main() {
 
     reduce_bit_depth(compress, out_w*out_h*out_channels, bit_red);
 
-    const int datastream_size = 150000;
-    uint8_t *datastream = malloc(datastream_size);
+    const int datastream_size = 15000;
+    uint8_t *datastream = malloc(datastream_size+100);
     output_data_buf_typedef output;
     icer_init_output_struct(&output, datastream, datastream_size);
     begin = clock();
-    icer_compress_image_uint8(compress, out_w, out_h, 3, ICER_FILTER_A, 5, &output);
+    icer_compress_image_uint8(compress, out_w, out_h, 4, ICER_FILTER_A, 1, &output);
     end = clock();
+
+    printf("compressed size %zu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
 
     FILE *ptr1;
 
     ptr1 = fopen("../compressed.bin","wb");
-    fwrite(output.data_start, 1, output.size_used, ptr1);
+    size_t written = fwrite(output.data_start, sizeof(output.data_start[0]), output.size_used, ptr1);
+    printf("written: %zu\n", written);
+    fflush(ptr1);
+    fclose(ptr1);
 
-    printf("compressed size %zu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
+    printf("output saved\n");
 
     FILE *ptr2;
     uint8_t *buf = malloc(500);
@@ -133,10 +142,13 @@ int main() {
         }
         length++;
     }
+    fclose(ptr2);
+
+    printf("decompress start\n");
 
     size_t decomp_w, decomp_h;
     begin = clock();
-    icer_decompress_image_uint8(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length, 3, ICER_FILTER_A, 5);
+    icer_decompress_image_uint8(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length, 4, ICER_FILTER_A, 1);
     end = clock();
     printf("decompress time taken: %lf\n", (float)(end-begin)/CLOCKS_PER_SEC);
 
@@ -149,7 +161,7 @@ int main() {
     }
 
     reduce_bit_depth(resized, out_w*out_h*out_channels, bit_red);
-    icer_wavelet_transform_stages(resized, out_w, out_h, 3, ICER_FILTER_A);
+    icer_wavelet_transform_stages(resized, out_w, out_h, 4, ICER_FILTER_A);
     printf("saving transformed image to: \"%s\"\n", wavelet_filename);
     res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, resized);
     if (res == 0) {
