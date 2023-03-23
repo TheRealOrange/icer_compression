@@ -194,6 +194,9 @@ int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *param
             partition_col_ind += segment_w;
 
             lsb = 6;
+            /* decompress starting from the msb, and stop whenever there is a missing bitplane */
+            /* it is impossible to decompress subsequent bit planes if there is a missing bit plane, due to how the context
+             * modeller works; it relies on the previously decoded bbitplanes to determine a bit's context */
             while (seg[segment_num][lsb] != NULL && lsb >= 0) {
                 pkt_context.subband_type = seg[segment_num][6]->subband_type;
                 pkt_context.lsb = lsb;
@@ -234,6 +237,9 @@ int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *param
             partition_col_ind += segment_w;
 
             lsb = 6;
+            /* decompress starting from the msb, and stop whenever there is a missing bitplane */
+            /* it is impossible to decompress subsequent bit planes if there is a missing bit plane, due to how the context
+             * modeller works; it relies on the previously decoded bbitplanes to determine a bit's context */
             while (seg[segment_num][lsb] != NULL && lsb >= 0) {
                 pkt_context.subband_type = seg[segment_num][6]->subband_type;
                 pkt_context.lsb = lsb;

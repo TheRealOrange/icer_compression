@@ -310,11 +310,13 @@ void icer_init_context_model_vals(icer_context_model_typedef* context_model, enu
 }
 
 static inline uint8_t get_bit_category_uint8(const uint8_t* data, uint8_t lsb) {
-    return icer_min_int(__builtin_popcount(((*data) & 0x7f) >> (lsb+1)), 3);
+    int msb = 32 - (__builtin_clz(((*data) & 0x7f) | 0b1)) - 1;
+    return icer_min_int((msb < lsb) ? 0 : msb - lsb, 3);
 }
 
 static inline uint8_t get_bit_category_uint16(const uint16_t* data, uint8_t lsb) {
-    return icer_min_int(__builtin_popcount(((*data) & 0x7fff) >> (lsb+1)), 3);
+    int msb = 32 - (__builtin_clz(((*data) & 0x7fff) | 0b1)) - 1;
+    return icer_min_int((msb < lsb) ? 0 : msb - lsb, 3);
 }
 
 static inline bool get_bit_significance_uint8(const uint8_t* data, uint8_t lsb) {

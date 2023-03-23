@@ -93,6 +93,15 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
         icer_packets[ind].image_w = image_w;
         icer_packets[ind].image_h = image_h;
         ind++;
+
+        icer_packets[ind].subband_type = ICER_SUBBAND_LL;
+        icer_packets[ind].decomp_level = stages;
+        icer_packets[ind].ll_mean_val = ll_mean;
+        icer_packets[ind].lsb = lsb;
+        icer_packets[ind].priority = priority << lsb;
+        icer_packets[ind].image_w = image_w;
+        icer_packets[ind].image_h = image_h;
+        ind++;
     }
 
     qsort(icer_packets, ind, sizeof(icer_packet_context), comp_packet);
