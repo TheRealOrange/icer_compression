@@ -48,8 +48,8 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
 
 int main() {
     setbuf(stdout, 0);
-    const size_t out_w = 1000;
-    const size_t out_h = 1500;
+    const size_t out_w = 512;
+    const size_t out_h = 512;
     const size_t out_channels = 1;
 
     int src_w, src_h, n;
@@ -105,12 +105,12 @@ int main() {
 
     reduce_bit_depth(compress, out_w*out_h*out_channels, bit_red);
 
-    const int datastream_size = 300000;
+    const int datastream_size = 150000;
     uint8_t *datastream = malloc(datastream_size);
     output_data_buf_typedef output;
     icer_init_output_struct(&output, datastream, datastream_size);
     begin = clock();
-    icer_compress_image_uint8(compress, out_w, out_h, 1, ICER_FILTER_A, 1, &output);
+    icer_compress_image_uint8(compress, out_w, out_h, 3, ICER_FILTER_A, 5, &output);
     end = clock();
 
     FILE *ptr1;
@@ -121,14 +121,14 @@ int main() {
     printf("compressed size %zu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
 
     FILE *ptr2;
-    uint8_t *buf = malloc(1000);
-    size_t buf_size = 1000;
+    uint8_t *buf = malloc(500);
+    size_t buf_size = 500;
     size_t length = 0;
 
     ptr2 = fopen("../compressed.bin","rb");
     while (fread(buf+length, sizeof *buf, 1, ptr2) == 1) {
         if (length >= buf_size-1) {
-            buf_size += 1000;
+            buf_size += 500;
             buf = (uint8_t*)realloc(buf, buf_size);
         }
         length++;
@@ -136,7 +136,7 @@ int main() {
 
     size_t decomp_w, decomp_h;
     begin = clock();
-    icer_decompress_image_uint8(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length, 1, ICER_FILTER_A, 1);
+    icer_decompress_image_uint8(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length, 3, ICER_FILTER_A, 5);
     end = clock();
     printf("decompress time taken: %lf\n", (float)(end-begin)/CLOCKS_PER_SEC);
 
@@ -148,14 +148,14 @@ int main() {
         return 0;
     }
 
-    //reduce_bit_depth(resized, out_w*out_h*out_channels, bit_red);
-    //icer_wavelet_transform_stages(resized, out_w, out_h, 1, ICER_FILTER_A);
-    //printf("saving transformed image to: \"%s\"\n", wavelet_filename);
-    //res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, resized);
-    //if (res == 0) {
-    //  printf("save failed\nexiting...\n");
-    //  return 0;
-    //}
+    reduce_bit_depth(resized, out_w*out_h*out_channels, bit_red);
+    icer_wavelet_transform_stages(resized, out_w, out_h, 3, ICER_FILTER_A);
+    printf("saving transformed image to: \"%s\"\n", wavelet_filename);
+    res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, resized);
+    if (res == 0) {
+      printf("save failed\nexiting...\n");
+      return 0;
+    }
 
     if (compare(decompress, resized, out_w*out_h*out_channels)) {
         printf("result is identical\n");

@@ -15,6 +15,10 @@ int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt) {
 }
 
 uint32_t icer_calculate_packet_crc32(image_segment_typedef *pkt) {
-    return crc32buf((char*) pkt, 10);
+    return crc32buf((char*)pkt, sizeof(image_segment_typedef)-4);
+}
+
+uint32_t icer_calculate_segment_crc32(image_segment_typedef *pkt) {
+    return crc32buf((char*)pkt + sizeof(image_segment_typedef), icer_ceil_div_uint32(pkt->data_length, 8));
 }
 

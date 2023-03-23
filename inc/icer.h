@@ -222,6 +222,7 @@ typedef struct {
     uint32_t image_w;
     uint32_t image_h;
     uint32_t data_length; // store data length in bits for the decoder
+    uint32_t data_crc32;
     uint32_t crc32;
 } image_segment_typedef;
 
@@ -323,6 +324,7 @@ void init_entropy_coder_context(encoder_context_typedef *encoder_context, uint16
 int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll_w, size_t ll_h, uint16_t segments);
 
 uint32_t icer_calculate_packet_crc32(image_segment_typedef *pkt);
+uint32_t icer_calculate_segment_crc32(image_segment_typedef *pkt);
 int icer_allocate_data_packet(image_segment_typedef **pkt, output_data_buf_typedef *output_data, uint8_t segment_num, packet_context *context);
 
 void icer_init_output_struct(output_data_buf_typedef *out, uint8_t *data, size_t len);

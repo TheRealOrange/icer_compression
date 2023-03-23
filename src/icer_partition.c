@@ -76,14 +76,14 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
          * the first r_t0 rows have height y_t
          * the remainder have height y_t + 1
          */
-        segment_h = params->y_t + ((row > params->r_t0) ? 1 : 0);
+        segment_h = params->y_t + ((row >= params->r_t0) ? 1 : 0);
         partition_col_ind = 0;
 
         for (uint16_t col = 0; col < params->c; col++) {
             /* the first c_t0 columns have width x_t
              * the remainder have width x_t + 1
              */
-            segment_w = params->x_t + ((col > params->c_t0) ? 1 : 0);
+            segment_w = params->x_t + ((col >= params->c_t0) ? 1 : 0);
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
             segment_num++;
             partition_col_ind += segment_w;
@@ -92,14 +92,13 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
             if (icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
-            init_entropy_coder_context(&context, encode_circ_buf, 2048, (uint8_t*)seg + sizeof(image_segment_typedef), seg->data_length);
+            init_entropy_coder_context(&context, encode_circ_buf, ICER_CIRC_BUF_SIZE, (uint8_t*)seg + sizeof(image_segment_typedef), seg->data_length);
             if (compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
-                data_in_bytes = context.output_ind + (context.output_bit_offset > 0);
-                output_data->size_used += data_in_bytes;
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
             data_in_bytes = context.output_ind + (context.output_bit_offset > 0);
             seg->data_length = context.output_ind * 8 + context.output_bit_offset;
+            seg->data_crc32 = icer_calculate_segment_crc32(seg);
             seg->crc32 = icer_calculate_packet_crc32(seg);
             output_data->size_used += data_in_bytes;
         }
@@ -115,14 +114,14 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
          * the first r_b0 rows have height y_b
          * the remainder have height y_b + 1
          */
-        segment_h = params->y_b + ((row > params->r_b0) ? 1 : 0);
+        segment_h = params->y_b + ((row >= params->r_b0) ? 1 : 0);
         partition_col_ind = 0;
 
         for (uint16_t col = 0; col < (params->c + 1); col++) {
             /* the first c_b0 columns have width x_b
              * the remainder have width x_b + 1
              */
-            segment_w = params->x_b + ((col > params->c_b0) ? 1 : 0);
+            segment_w = params->x_b + ((col >= params->c_b0) ? 1 : 0);
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
             segment_num++;
             partition_col_ind += segment_w;
@@ -131,10 +130,11 @@ int compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size
             if (icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) {
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
-            init_entropy_coder_context(&context, encode_circ_buf, 2048, (uint8_t*)seg + sizeof(image_segment_typedef), seg->data_length);
+            init_entropy_coder_context(&context, encode_circ_buf, ICER_CIRC_BUF_SIZE, (uint8_t*)seg + sizeof(image_segment_typedef), seg->data_length);
             if (compress_bitplane_uint8(segment_start, segment_w, segment_h, rowstride, &context_model, &context, pkt_context) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
             data_in_bytes = context.output_ind + (context.output_bit_offset > 0);
             seg->data_length = context.output_ind * 8 + context.output_bit_offset;
+            seg->data_crc32 = icer_calculate_segment_crc32(seg);
             seg->crc32 = icer_calculate_packet_crc32(seg);
             output_data->size_used += data_in_bytes;
         }
@@ -166,14 +166,14 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
          * the first r_t0 rows have height y_t
          * the remainder have height y_t + 1
          */
-        segment_h = params->y_t + ((row > params->r_t0) ? 1 : 0);
+        segment_h = params->y_t + ((row >= params->r_t0) ? 1 : 0);
         partition_col_ind = 0;
 
         for (uint16_t col = 0; col < params->c; col++) {
             /* the first c_t0 columns have width x_t
              * the remainder have width x_t + 1
              */
-            segment_w = params->x_t + ((col > params->c_t0) ? 1 : 0);
+            segment_w = params->x_t + ((col >= params->c_t0) ? 1 : 0);
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
             segment_num++;
             partition_col_ind += segment_w;
@@ -201,14 +201,14 @@ int decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, si
          * the first r_b0 rows have height y_b
          * the remainder have height y_b + 1
          */
-        segment_h = params->y_b + ((row > params->r_b0) ? 1 : 0);
+        segment_h = params->y_b + ((row >= params->r_b0) ? 1 : 0);
         partition_col_ind = 0;
 
         for (uint16_t col = 0; col < (params->c + 1); col++) {
             /* the first c_b0 columns have width x_b
              * the remainder have width x_b + 1
              */
-            segment_w = params->x_b + ((col > params->c_b0) ? 1 : 0);
+            segment_w = params->x_b + ((col >= params->c_b0) ? 1 : 0);
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
             segment_num++;
             partition_col_ind += segment_w;

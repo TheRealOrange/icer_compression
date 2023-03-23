@@ -232,14 +232,13 @@ size_t icer_find_packet_in_bytestream(image_segment_typedef **seg, uint8_t *data
         if ((*seg)->preamble == ICER_PACKET_PREAMBLE) {
             if ((*seg)->crc32 == icer_calculate_packet_crc32((*seg))) {
                if (icer_ceil_div_uint32((*seg)->data_length, 8) <= (data_length-offset-sizeof(image_segment_typedef))) {
-                 return offset;
+                   if((*seg)->data_crc32 == icer_calculate_segment_crc32((*seg))) {
+                       return offset + icer_ceil_div_uint32((*seg)->data_length, 8);
+                   }
                }
-            } else {
-              (*seg) = NULL;
             }
-        } else {
-          (*seg) = NULL;
         }
+        (*seg) = NULL;
         offset++;
     }
     return 0;
