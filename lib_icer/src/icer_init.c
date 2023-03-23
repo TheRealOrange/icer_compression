@@ -2,7 +2,7 @@
 // Created by linyi on 19/3/2023.
 //
 
-#include "../inc/icer.h"
+#include "icer.h"
 
 #define INIT_CODING_SCHEME(bin, inp, inp_bits, out, out_bits) { \
 icer_custom_coding_scheme[bin][inp].input_code_bits = inp_bits;       \

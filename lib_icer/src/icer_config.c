@@ -1,7 +1,7 @@
 //
 // Created by linyi on 19/3/2023.
 //
-#include "../inc/icer.h"
+#include "icer.h"
 
 icer_custom_code_typedef icer_custom_coding_scheme[ICER_ENCODER_BIN_MAX + 1][CUSTOM_CODING_MAX_LOOKUP];
 icer_custom_code_typedef icer_custom_decode_scheme[ICER_ENCODER_BIN_MAX + 1][CUSTOM_CODING_MAX_LOOKUP];

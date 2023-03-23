@@ -3,7 +3,7 @@
 //
 
 #include <string.h>
-#include "../inc/icer.h"
+#include "icer.h"
 
 #define ICER_BITMASK_MACRO(x) (((unsigned)1 << x) - 1)
 

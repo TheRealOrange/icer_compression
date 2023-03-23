@@ -2,7 +2,7 @@
 // Created by linyi on 19/3/2023.
 //
 
-#include "../inc/icer.h"
+#include "icer.h"
 
 uint16_t icer_encode_circ_buf[ICER_CIRC_BUF_SIZE];
 

@@ -2,7 +2,7 @@
 // Created by linyi on 19/3/2023.
 //
 
-#include "../inc/icer.h"
+#include "icer.h"
 
 /* compute which bin of the interleaved entropy coder to place a bit to be encoded based of the probability cutoffs of each bin */
 int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt) {

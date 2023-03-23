@@ -177,7 +177,7 @@ int main() {
     }
 
     reduce_bit_depth(resized, out_w*out_h, bit_red);
-    icer_wavelet_transform_stages(resized, out_w, out_h, stages, filt);
+    icer_wavelet_transform_stages_uint8(resized, out_w, out_h, stages, filt);
     printf("saving transformed image to: \"%s\"\n", wavelet_filename);
     res = stbi_write_bmp(wavelet_filename, out_w, out_h, 1, resized);
     if (res == 0) {
