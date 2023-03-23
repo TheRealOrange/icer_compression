@@ -4,11 +4,20 @@ The code in this repository implements the NASA ICER image compression algorithm
 
 
 
-| ![original](C:\Users\linyi\CLionProjects\icer_compression\assets\original.bmp) | ![70kb_quota](C:\Users\linyi\CLionProjects\icer_compression\assets\70kb_quota.bmp) |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| original image                                               | 70 kilobyte quota                                            |
-| ![50kb_quota](C:\Users\linyi\CLionProjects\icer_compression\assets\50kb_quota.bmp) | ![30kb_quota](C:\Users\linyi\CLionProjects\icer_compression\assets\30kb_quota.bmp) |
-| 50 kilobyte quota                                            | 30 kilobyte quota                                            |
+Below are sample images of the compression algorithm producing output images of varying quality depending on the space allocated for it.
+
+| ![original](.\assets\original.bmp)     | ![70kb_quota](.\assets\70kb_quota.bmp) |
+| -------------------------------------- | -------------------------------------- |
+| original image                         | 70 kilobyte quota                      |
+| ![50kb_quota](.\assets\50kb_quota.bmp) | ![30kb_quota](.\assets\30kb_quota.bmp) |
+| 50 kilobyte quota                      | 30 kilobyte quota                      |
+
+
+
+This library uses snippets and sections of code written by others, I will credit them accordingly here.
+
+- CRC32 checksum library, taken from the [SNIPPETS C Source Code Archive](https://github.com/vonj/snippets.org) (now itself archived on a github repository)
+- Image parsing libaries, taken from [STB libraries](https://github.com/nothings/stb)
 
 
 
@@ -19,6 +28,8 @@ This compression algorithm is based on [a document published by NASA](https://ip
 This algorithm is best described by the abstract of the document by NASA, which reads as follows:
 
 > ICER is a progressive, wavelet-based image data compressor designed to meet the specialized needs of deep-space applications while achieving state-of-the-art compression effectiveness. ICER can provide lossless and lossy compression, and incorporates an error-containment scheme to limit the effects of data loss during transmission. The Mars Exploration Rover (MER) mission will rely primarily on a software implementation of ICER for image compression. This article describes ICER and the methods it uses to meet its goals, and explains the rationale behind the choice of methods. Performance results also are presented.
+
+To get a better understanding of how this works, as well as its advantages and disadvantages, its recommended that you read the original NASA document.
 
 
 
@@ -32,6 +43,8 @@ There are a few key design considerations which were taking into account when wr
 - Error containment features prevent data loss from affecting the quality of the whole image
 - Ability to set a output size target and stop compression once the quota is reached
 - Able to compress images losslessly (if the output quota permits)
+
+(again, recommended that you carefully read the NASA document to understand why and how these are significant)
 
 
 
@@ -50,6 +63,12 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
 ```
 
 which is the function which enables the user to decompress a byte stream stored inside `datastream` and fill the image and the dimensions into the buffer specified.
+
+
+
+## How do I test it?
+
+To run the example code, simply build it and place the `boat.512.bmp` image as the same folder as the executable to generate the output.
 
 
 
