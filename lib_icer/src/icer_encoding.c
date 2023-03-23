@@ -2,14 +2,14 @@
 // Created by linyi on 19/3/2023.
 //
 
-#include "icer.h"
+#include "../inc/icer.h"
 
-uint16_t encode_circ_buf[ICER_CIRC_BUF_SIZE];
+uint16_t icer_encode_circ_buf[ICER_CIRC_BUF_SIZE];
 
-static inline uint16_t pop_buf(encoder_context_typedef *cntxt);
-static inline int16_t alloc_buf(encoder_context_typedef *cntxt);
+static inline uint16_t pop_buf(icer_encoder_context_typedef *cntxt);
+static inline int16_t alloc_buf(icer_encoder_context_typedef *cntxt);
 
-void init_entropy_coder_context(encoder_context_typedef *encoder_context, uint16_t *encode_buffer, size_t buffer_length, uint8_t *encoder_out, size_t enc_out_max) {
+void icer_init_entropy_coder_context(icer_encoder_context_typedef *encoder_context, uint16_t *encode_buffer, size_t buffer_length, uint8_t *encoder_out, size_t enc_out_max) {
     encoder_context->max_output_length = enc_out_max;
     encoder_context->output_buffer = encoder_out;
 
@@ -30,9 +30,8 @@ void init_entropy_coder_context(encoder_context_typedef *encoder_context, uint16
     encoder_context->output_buffer[encoder_context->output_ind] = 0;
 }
 
-//#define DEBUG_PRINTS
 
-int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt) {
+int icer_encode_bit(icer_encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt) {
 
     uint16_t *curr_bin;
     if (zero_cnt < (total_cnt >> 1)) {
@@ -57,38 +56,26 @@ int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint3
     if (encoder_context->bin_current_buf[bin] == -1) {
         encoder_context->bin_current_buf[bin] = alloc_buf(encoder_context);
         if (encoder_context->bin_current_buf[bin] == -1) {
-            if (flush_encode(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
+            if (icer_flush_encode(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) return ICER_BYTE_QUOTA_EXCEEDED;
             else encoder_context->bin_current_buf[bin] = alloc_buf(encoder_context);
         }
         curr_bin = encoder_context->encode_buffer + encoder_context->bin_current_buf[bin];
         (*curr_bin) = bin << ICER_ENC_BUF_BITS_OFFSET;
     } else curr_bin = encoder_context->encode_buffer + encoder_context->bin_current_buf[bin];
-#ifdef  DEBUG_PRINTS
-    printf("bin: %d, bit: %d\n",bin, bit16);
-#endif
 
     if (bin > ICER_ENC_BIN_8) {
         /* golomb code bins */
         if (!bit16) (*curr_bin)++;
-#ifdef  DEBUG_PRINTS
-        printf("golomb code\n");
-#endif
         if (bit16) {
             golomb_k = (*curr_bin) & ICER_ENC_BUF_DATA_MASK;
-#ifdef  DEBUG_PRINTS
-            printf("golomb code case1: %d, bits: %d\n", golomb_k + ((golomb_k < golomb_coders[bin].i) ? 0 : golomb_coders[bin].i), golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i));
-#endif
-            golomb_out_code = golomb_k + ((golomb_k < golomb_coders[bin].i) ? 0 : golomb_coders[bin].i);
-            golomb_out_bits = golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i);
+            golomb_out_code = golomb_k + ((golomb_k < icer_golomb_coders[bin].i) ? 0 : icer_golomb_coders[bin].i);
+            golomb_out_bits = icer_golomb_coders[bin].l + (golomb_k >= icer_golomb_coders[bin].i);
             icer_reverse_bits(&golomb_out_code, golomb_out_bits);
             (*curr_bin) = (golomb_out_bits << ICER_ENC_BUF_BITS_OFFSET);
             (*curr_bin) |= (golomb_out_code & ICER_ENC_BUF_DATA_MASK);
             (*curr_bin) |= ICER_ENC_BUF_DONE_MASK;
             encoder_context->bin_current_buf[bin] = -1;
-        } else if (((*curr_bin) & ICER_ENC_BUF_DATA_MASK) >= golomb_coders[bin].m) {
-#ifdef  DEBUG_PRINTS
-            printf("golomb code case2\n");
-#endif
+        } else if (((*curr_bin) & ICER_ENC_BUF_DATA_MASK) >= icer_golomb_coders[bin].m) {
             (*curr_bin) = 1 << ICER_ENC_BUF_BITS_OFFSET;
             (*curr_bin) |= 1;
             (*curr_bin) |= ICER_ENC_BUF_DONE_MASK;
@@ -99,13 +86,10 @@ int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint3
         (*curr_bin) |= (bit16 << encoder_context->bin_current_buf_bits[bin]);
         encoder_context->bin_current_buf_bits[bin]++;
         prefix = (*curr_bin) & ICER_ENC_BUF_DATA_MASK;
-        if (custom_coding_scheme[bin][prefix].input_code_bits == encoder_context->bin_current_buf_bits[bin]) {
-            (*curr_bin) = custom_coding_scheme[bin][prefix].output_code_bits << ICER_ENC_BUF_BITS_OFFSET;
-            (*curr_bin) |= custom_coding_scheme[bin][prefix].output_code & ICER_ENC_BUF_DATA_MASK;
+        if (icer_custom_coding_scheme[bin][prefix].input_code_bits == encoder_context->bin_current_buf_bits[bin]) {
+            (*curr_bin) = icer_custom_coding_scheme[bin][prefix].output_code_bits << ICER_ENC_BUF_BITS_OFFSET;
+            (*curr_bin) |= icer_custom_coding_scheme[bin][prefix].output_code & ICER_ENC_BUF_DATA_MASK;
             (*curr_bin) |= ICER_ENC_BUF_DONE_MASK;
-#ifdef  DEBUG_PRINTS
-            printf("bin: %d, prefix: %d, output: %d, num_bits: %d\n", bin, prefix, custom_coding_scheme[bin][prefix].output_code, custom_coding_scheme[bin][prefix].output_code_bits );
-#endif
             encoder_context->bin_current_buf[bin] = -1;
             encoder_context->bin_current_buf_bits[bin] = 0;
         }
@@ -124,23 +108,15 @@ int icer_encode_bit(encoder_context_typedef *encoder_context, uint8_t bit, uint3
     return ICER_RESULT_OK;
 }
 
-int icer_popbuf_while_avail(encoder_context_typedef *encoder_context) {
+int icer_popbuf_while_avail(icer_encoder_context_typedef *encoder_context) {
     uint16_t out, bits;
-    //int16_t mask;
     uint16_t d, r;
     int bits_to_encode;
     while (encoder_context->used > 0 && (encoder_context->encode_buffer[encoder_context->head] & ICER_ENC_BUF_DONE_MASK)) {
         out = pop_buf(encoder_context);
         bits = out >> ICER_ENC_BUF_BITS_OFFSET;
-#ifdef  DEBUG_PRINTS
-        printf("popbuf\n");
-        printf("pop num bits: %d, bits: %d\n", bits, out & ((1 << bits) - 1));
-#endif
         while (bits) {
             bits_to_encode = icer_min_int(8-encoder_context->output_bit_offset, bits);
-#ifdef  DEBUG_PRINTS
-            printf("enc num bits: %d, bits: %d\n", bits_to_encode, out & ((1 << bits_to_encode) - 1));
-#endif
             //mask = INT16_MIN >> (bits_to_encode-1);
             encoder_context->output_buffer[encoder_context->output_ind] |= (out & ((1 << bits_to_encode) - 1)) << (encoder_context->output_bit_offset);
             out >>= bits_to_encode;
@@ -155,18 +131,15 @@ int icer_popbuf_while_avail(encoder_context_typedef *encoder_context) {
             if (encoder_context->output_ind == encoder_context->max_output_length) {
                 return ICER_BYTE_QUOTA_EXCEEDED;
             }
-#ifdef  DEBUG_PRINTS
-            printf("ind: %d, offset: %d\n", encoder_context->output_ind, encoder_context->output_bit_offset);
-#endif
         }
     }
     return ICER_RESULT_OK;
 }
 
-int flush_encode(encoder_context_typedef *encoder_context) {
+int icer_flush_encode(icer_encoder_context_typedef *encoder_context) {
     //printf("to flush: %3zu codewords\n", encoder_context->used);
     uint16_t *first = encoder_context->encode_buffer + encoder_context->head;
-    custom_flush_typedef *flush;
+    icer_custom_flush_typedef *flush;
     uint16_t prefix;
     if (((*first) & ICER_ENC_BUF_DONE_MASK) == 0) {
         uint8_t bin = (*first) >> ICER_ENC_BUF_BITS_OFFSET;
@@ -174,54 +147,39 @@ int flush_encode(encoder_context_typedef *encoder_context) {
         uint16_t golomb_k;
         uint16_t golomb_out_code;
         uint8_t golomb_out_bits;
-#ifdef  DEBUG_PRINTS
-        printf("flushing bin: %d\n", bin);
-#endif
 
         if (bin > ICER_ENC_BIN_8) {
             /* golomb code bins */
             golomb_k = (*first) & ICER_ENC_BUF_DATA_MASK;
-            if (golomb_k == golomb_coders[bin].m - 1) {
+            if (golomb_k == icer_golomb_coders[bin].m - 1) {
                 *first = 1 << ICER_ENC_BUF_BITS_OFFSET;
                 *first |= 1;
                 *first |= ICER_ENC_BUF_DONE_MASK;
-#ifdef  DEBUG_PRINTS
-                printf("flush golomb bits: %d\n", 1);
-#endif
             } else {
-                golomb_out_code = golomb_k + ((golomb_k < golomb_coders[bin].i) ? 0 : golomb_coders[bin].i);
-                golomb_out_bits = golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i);
+                golomb_out_code = golomb_k + ((golomb_k < icer_golomb_coders[bin].i) ? 0 : icer_golomb_coders[bin].i);
+                golomb_out_bits = icer_golomb_coders[bin].l + (golomb_k >= icer_golomb_coders[bin].i);
                 icer_reverse_bits(&golomb_out_code, golomb_out_bits);
                 *first = (golomb_out_bits << ICER_ENC_BUF_BITS_OFFSET);
                 *first |= (golomb_out_code & ICER_ENC_BUF_DATA_MASK);
                 *first |= ICER_ENC_BUF_DONE_MASK;
-#ifdef  DEBUG_PRINTS
-                printf("flush golomb bits: %d\n", (golomb_coders[bin].l + (golomb_k >= golomb_coders[bin].i)));
-#endif
             }
             encoder_context->bin_current_buf[bin] = -1;
         } else if (bin != ICER_ENC_BIN_1) {
             /* custom non prefix code bins */
-            flush = &(custom_code_flush_bits[bin][(*first) & ICER_ENC_BUF_DATA_MASK][encoder_context->bin_current_buf_bits[bin]]);
+            flush = &(icer_custom_code_flush_bits[bin][(*first) & ICER_ENC_BUF_DATA_MASK][encoder_context->bin_current_buf_bits[bin]]);
             (*first) |= flush->flush_bit << encoder_context->bin_current_buf_bits[bin];
             encoder_context->bin_current_buf_bits[bin] += flush->flush_bit_numbers;
 
             prefix = (*first) & ICER_ENC_BUF_DATA_MASK;
 
-            (*first) = custom_coding_scheme[bin][prefix].output_code_bits << ICER_ENC_BUF_BITS_OFFSET;
-            (*first) |= custom_coding_scheme[bin][prefix].output_code & ICER_ENC_BUF_DATA_MASK;
+            (*first) = icer_custom_coding_scheme[bin][prefix].output_code_bits << ICER_ENC_BUF_BITS_OFFSET;
+            (*first) |= icer_custom_coding_scheme[bin][prefix].output_code & ICER_ENC_BUF_DATA_MASK;
             (*first) |= ICER_ENC_BUF_DONE_MASK;
-#ifdef  DEBUG_PRINTS
-            printf("flushed num bits: %d, bits: %d\n", custom_coding_scheme[bin][prefix].output_code_bits, custom_coding_scheme[bin][prefix].output_code);
-#endif
             encoder_context->bin_current_buf[bin] = -1;
             encoder_context->bin_current_buf_bits[bin] = 0;
         } else {
             /* uncoded bin */
             // this should never happen?
-#ifdef  DEBUG_PRINTS
-            printf("oopsies its broken\n");
-#endif
         }
     }
 
@@ -231,20 +189,20 @@ int flush_encode(encoder_context_typedef *encoder_context) {
 
 /* circular buffer helper functions */
 
-void icer_init_output_struct(output_data_buf_typedef *out, uint8_t *data, size_t len) {
+void icer_init_output_struct(icer_output_data_buf_typedef *out, uint8_t *data, size_t len) {
     out->size_used = 0;
     out->data_start = data;
     out->size_allocated = len;
 }
 
-static inline uint16_t pop_buf(encoder_context_typedef *cntxt) {
+static inline uint16_t pop_buf(icer_encoder_context_typedef *cntxt) {
     if (cntxt->used > 0) cntxt->used--;
     uint16_t res = cntxt->encode_buffer[cntxt->head];
     cntxt->head = (cntxt->head + 1) % cntxt->buffer_length;
     return res;
 }
 
-static inline int16_t alloc_buf(encoder_context_typedef *cntxt) {
+static inline int16_t alloc_buf(icer_encoder_context_typedef *cntxt) {
     if (cntxt->used >= cntxt->buffer_length) return -1;
     cntxt->used++;
     int16_t ind = (int16_t)cntxt->tail;
@@ -254,12 +212,12 @@ static inline int16_t alloc_buf(encoder_context_typedef *cntxt) {
 
 /* data packet functions */
 
-int icer_allocate_data_packet(image_segment_typedef **pkt, output_data_buf_typedef *output_data, uint8_t segment_num, packet_context *context) {
+int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data_buf_typedef *output_data, uint8_t segment_num, icer_packet_context *context) {
     size_t buf_len = output_data->size_allocated - output_data->size_used;
-    if (buf_len < sizeof(image_segment_typedef)) {
+    if (buf_len < sizeof(icer_image_segment_typedef)) {
         return ICER_BYTE_QUOTA_EXCEEDED;
     }
-    (*pkt) = (image_segment_typedef *) (output_data->data_start + output_data->size_used);
+    (*pkt) = (icer_image_segment_typedef *) (output_data->data_start + output_data->size_used);
     (*pkt)->preamble = ICER_PACKET_PREAMBLE;
     (*pkt)->decomp_level = context->decomp_level;
     (*pkt)->subband_type = context->subband_type;
@@ -271,8 +229,8 @@ int icer_allocate_data_packet(image_segment_typedef **pkt, output_data_buf_typed
     (*pkt)->data_crc32 = 0;
     (*pkt)->crc32 = 0;
 
-    output_data->size_used += sizeof(image_segment_typedef);
-    buf_len -= sizeof(image_segment_typedef);
+    output_data->size_used += sizeof(icer_image_segment_typedef);
+    buf_len -= sizeof(icer_image_segment_typedef);
 
     // store max data length first
     (*pkt)->data_length = buf_len;

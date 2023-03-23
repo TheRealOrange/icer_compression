@@ -2,7 +2,7 @@
 // Created by linyi on 14/3/2023.
 //
 
-#include "icer.h"
+#include "../inc/icer.h"
 
 int icer_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages,
                                   enum icer_filter_types filt) {
@@ -10,8 +10,8 @@ int icer_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t image_h
     size_t low_w = image_w;
     size_t low_h = image_h;
 
-    size_t smallest_w = get_dim_n_low_stages(image_w, stages);
-    size_t smallest_h = get_dim_n_low_stages(image_h, stages);
+    size_t smallest_w = icer_get_dim_n_low_stages(image_w, stages);
+    size_t smallest_h = icer_get_dim_n_low_stages(image_h, stages);
 
     if (smallest_w < 3 || smallest_h < 3) {
         return ICER_TOO_MANY_STAGES;
@@ -33,8 +33,8 @@ int icer_inverse_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t
     size_t low_h;
     uint8_t decomps;
 
-    size_t smallest_w = get_dim_n_low_stages(image_w, stages);
-    size_t smallest_h = get_dim_n_low_stages(image_h, stages);
+    size_t smallest_w = icer_get_dim_n_low_stages(image_w, stages);
+    size_t smallest_h = icer_get_dim_n_low_stages(image_h, stages);
 
     if (smallest_w < 3 || smallest_h < 3) {
         return ICER_TOO_MANY_STAGES;
@@ -43,19 +43,19 @@ int icer_inverse_wavelet_transform_stages(uint8_t *image, size_t image_w, size_t
     //icer_from_sign_magnitude_int8(image, image_w * image_h);
     for (uint8_t it = 1; it <= stages; it++) {
         decomps = stages - it;
-        low_w = get_dim_n_low_stages(image_w, decomps);
-        low_h = get_dim_n_low_stages(image_h, decomps);
+        low_w = icer_get_dim_n_low_stages(image_w, decomps);
+        low_h = icer_get_dim_n_low_stages(image_h, decomps);
         overflow |= icer_inverse_wavelet_transform_2d_uint8(image, low_w, low_h, image_w, filt);
     }
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
 
-size_t get_dim_n_low_stages(size_t dim, uint8_t stages) {
+size_t icer_get_dim_n_low_stages(size_t dim, uint8_t stages) {
     return icer_ceil_div_size_t(dim, icer_pow_uint(2, stages));
 }
 
-size_t get_dim_n_high_stages(size_t dim, uint8_t stages) {
-    return icer_floor_div_size_t(dim, icer_pow_uint(2, stages));
+size_t icer_get_dim_n_high_stages(size_t dim, uint8_t stages) {
+    return icer_floor_div_size_t(icer_ceil_div_size_t(dim, icer_pow_uint(2, stages-1)), 2);
 }
 
 int icer_wavelet_transform_2d_uint8(uint8_t *image, size_t image_w, size_t image_h, size_t rowstride,
@@ -287,7 +287,7 @@ void icer_interleave_uint8(uint8_t *data, size_t len, size_t stride) {
 
     while (processed < n) {
         k = icer_find_k(n - processed);
-        segment = slice_lengths[k];
+        segment = icer_slice_lengths[k];
         halfseg = segment / 2;
 
         left = n - processed;
@@ -333,7 +333,7 @@ void icer_deinterleave_uint8(uint8_t *data, size_t len, size_t stride) {
 
     while (processed < n) {
         k = icer_find_k(n - processed);
-        segment = slice_lengths[k];
+        segment = icer_slice_lengths[k];
         halfseg = segment / 2;
 
         for (size_t i = 1; i < segment; i *= 3) {
@@ -369,19 +369,19 @@ uint8_t icer_find_k(size_t len) {
     uint8_t max_k = MAX_K - 1;
     uint8_t min_k = 0;
 
-    if (slice_lengths[min_k] == 0) slice_lengths[min_k] = icer_pow_uint(3, min_k) + 1;
-    if (slice_lengths[max_k] == 0) slice_lengths[max_k] = icer_pow_uint(3, max_k) + 1;
+    if (icer_slice_lengths[min_k] == 0) icer_slice_lengths[min_k] = icer_pow_uint(3, min_k) + 1;
+    if (icer_slice_lengths[max_k] == 0) icer_slice_lengths[max_k] = icer_pow_uint(3, max_k) + 1;
 
     uint8_t mid;
     uint8_t res = 0;
     while (min_k < max_k) {
         mid = (max_k + min_k) / 2;
-        if (slice_lengths[mid] == 0) slice_lengths[mid] = icer_pow_uint(3, mid) + 1;
+        if (icer_slice_lengths[mid] == 0) icer_slice_lengths[mid] = icer_pow_uint(3, mid) + 1;
 
-        if (len > slice_lengths[mid]) {
+        if (len > icer_slice_lengths[mid]) {
             min_k = mid + 1;
             res = mid;
-        } else if (len < slice_lengths[mid]) {
+        } else if (len < icer_slice_lengths[mid]) {
             max_k = mid - 1;
         } else {
             break;

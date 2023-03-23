@@ -2,7 +2,7 @@
 // Created by linyi on 19/3/2023.
 //
 
-#include "icer.h"
+#include "../inc/icer.h"
 
 static inline uint8_t get_bit_category_uint8(const uint8_t* data, uint8_t lsb);
 static inline uint8_t get_bit_category_uint16(const uint16_t* data, uint8_t lsb);
@@ -11,18 +11,16 @@ static inline bool get_bit_significance_uint16(const uint16_t* data, uint8_t lsb
 static inline int8_t get_sign_uint8(const uint8_t* data, uint8_t lsb);
 static inline int8_t get_sign_uint16(const uint16_t* data, uint8_t lsb);
 
-int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
-                            icer_context_model_typedef *context_model,
-                            encoder_context_typedef *encoder_context,
-                            packet_context* pkt_context) {
+int icer_compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+                                 icer_context_model_typedef *context_model,
+                                 icer_encoder_context_typedef *encoder_context,
+                                 icer_packet_context* pkt_context) {
     uint8_t *pos;
     uint8_t *rowstart = data;
     int category;
     bool bit;
     uint8_t lsb = pkt_context->lsb;
     uint8_t mask = 0b1 << lsb;
-
-    //printf("max out: %zu\n", encoder_context->max_output_length);
 
     uint8_t *h0, *h1, *v0, *v1, *d0, *d1, *d2, *d3;
     uint8_t h, v, d, tmp;
@@ -154,19 +152,17 @@ int compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_
         rowstart += rowstride;
     }
     while (encoder_context->used > 0) {
-        if (flush_encode(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) {
-            printf("end flush exceeded output size: %zu bytes\n", encoder_context->output_ind);
-            printf("lsb: %d, decomp: %d, subband: %d\n", pkt_context->lsb, pkt_context->decomp_level, pkt_context->subband_type);
+        if (icer_flush_encode(encoder_context) == ICER_BYTE_QUOTA_EXCEEDED) {
             return ICER_BYTE_QUOTA_EXCEEDED;
         }
     }
     return ICER_RESULT_OK;
 }
 
-int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
-                              icer_context_model_typedef *context_model,
-                              decoder_context_typedef *decoder_context,
-                              packet_context* pkt_context) {
+int icer_decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+                                   icer_context_model_typedef *context_model,
+                                   icer_decoder_context_typedef *decoder_context,
+                                   icer_packet_context* pkt_context) {
     uint8_t *pos;
     uint8_t *rowstart = data;
     int category;
@@ -302,7 +298,7 @@ int decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, siz
 }
 
 
-void init_context_model_vals(icer_context_model_typedef* context_model, enum icer_subband_types subband_type) {
+void icer_init_context_model_vals(icer_context_model_typedef* context_model, enum icer_subband_types subband_type) {
     context_model->subband_type = subband_type;
     for (size_t i = 0;i <= ICER_CONTEXT_MAX;i++) {
         context_model->zero_count[i] = ICER_DEFAULT_CONTEXT_ZERO_COUNT;

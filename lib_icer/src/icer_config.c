@@ -1,14 +1,14 @@
 //
 // Created by linyi on 19/3/2023.
 //
-#include "icer.h"
+#include "../inc/icer.h"
 
-custom_code_typedef custom_coding_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
-custom_code_typedef custom_decode_scheme[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODING_MAX_LOOKUP];
+icer_custom_code_typedef icer_custom_coding_scheme[ICER_ENCODER_BIN_MAX + 1][CUSTOM_CODING_MAX_LOOKUP];
+icer_custom_code_typedef icer_custom_decode_scheme[ICER_ENCODER_BIN_MAX + 1][CUSTOM_CODING_MAX_LOOKUP];
 
-custom_flush_typedef custom_code_flush_bits[ICER_ENCODER_BIN_MAX+1][CUSTOM_CODE_FLUSH_MAX_LOOKUP+1][MAX_NUM_BITS_BEFORE_FLUSH+1];
+icer_custom_flush_typedef icer_custom_code_flush_bits[ICER_ENCODER_BIN_MAX + 1][CUSTOM_CODE_FLUSH_MAX_LOOKUP + 1][MAX_NUM_BITS_BEFORE_FLUSH + 1];
 
-golomb_code_typedef golomb_coders[ICER_ENCODER_BIN_MAX+1];
+icer_golomb_code_typedef icer_golomb_coders[ICER_ENCODER_BIN_MAX + 1];
 
 const int16_t icer_wavelet_filter_parameters[][4] = {{0,  4, 4, 0},
                                                      {0,  4, 6, 4},
@@ -100,4 +100,4 @@ const int32_t icer_bin_coding_scheme[ICER_ENCODER_BIN_MAX+1] = {
         200,
         512
 };
-size_t slice_lengths[MAX_K] = {0};
+size_t icer_slice_lengths[MAX_K] = {0};

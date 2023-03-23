@@ -11,7 +11,11 @@ set(CMAKE_C_FLAGS "-Wall -Wextra")
 set(CMAKE_C_FLAGS_DEBUG "-g")
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 
-include_directories( inc )
+include_directories(example/inc)
+include_directories(lib_icer/inc)
+add_subdirectory(lib_icer)
 
-add_executable(icer_compression src/main.c inc/icer.h src/icer_wavelet.c inc/stb_image_write.h inc/stb_image.h src/stb_lib.c inc/stb_image_resize.h inc/crc.h src/crc32.c src/icer_encoding.c src/icer_decoding.c src/icer_partition.c src/icer_util.c src/icer_context_modeller.c src/icer_init.c src/icer_config.c src/icer_compress.c)
+add_executable(icer_compression example/src/main.c example/inc/stb_image_write.h example/inc/stb_image.h example/src/stb_lib.c example/inc/stb_image_resize.h)
+
 target_link_libraries(icer_compression PRIVATE m)
+target_link_libraries(icer_compression PRIVATE lib_icer)

@@ -2,23 +2,23 @@
 // Created by linyi on 19/3/2023.
 //
 
-#include "icer.h"
+#include "../inc/icer.h"
 
 #define INIT_CODING_SCHEME(bin, inp, inp_bits, out, out_bits) { \
-custom_coding_scheme[bin][inp].input_code_bits = inp_bits;       \
-custom_coding_scheme[bin][inp].output_code = out;                \
-custom_coding_scheme[bin][inp].output_code_bits = out_bits;      \
+icer_custom_coding_scheme[bin][inp].input_code_bits = inp_bits;       \
+icer_custom_coding_scheme[bin][inp].output_code = out;                \
+icer_custom_coding_scheme[bin][inp].output_code_bits = out_bits;      \
 }
 
 #define INIT_FLUSH_BITS(bin, inp, inp_bits, out, out_bits) { \
-custom_code_flush_bits[bin][inp][inp_bits].flush_bit = out;   \
-custom_code_flush_bits[bin][inp][inp_bits].flush_bit_numbers = out_bits; \
+icer_custom_code_flush_bits[bin][inp][inp_bits].flush_bit = out;   \
+icer_custom_code_flush_bits[bin][inp][inp_bits].flush_bit_numbers = out_bits; \
 }
 
 #define INIT_DECODE_SCHEME(bin, out, out_bits, inp, inp_bits) { \
-custom_decode_scheme[bin][inp].input_code_bits = inp_bits;       \
-custom_decode_scheme[bin][inp].output_code = out;                \
-custom_decode_scheme[bin][inp].output_code_bits = out_bits;      \
+icer_custom_decode_scheme[bin][inp].input_code_bits = inp_bits;       \
+icer_custom_decode_scheme[bin][inp].output_code = out;                \
+icer_custom_decode_scheme[bin][inp].output_code_bits = out_bits;      \
 }
 
 int icer_init() {
@@ -33,8 +33,8 @@ int icer_init() {
 void icer_init_decodescheme() {
     for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
         for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) {
-            custom_decode_scheme[it][j].input_code_bits = 0;
-            custom_decode_scheme[it][j].output_code_bits = 0;
+            icer_custom_decode_scheme[it][j].input_code_bits = 0;
+            icer_custom_decode_scheme[it][j].output_code_bits = 0;
         }
     }
 
@@ -101,14 +101,14 @@ void icer_init_decodescheme() {
 
     for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
         for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) {
-            if (custom_decode_scheme[it][j].output_code_bits != 0) {
+            if (icer_custom_decode_scheme[it][j].output_code_bits != 0) {
                 uint8_t reversed = 0;
-                for (int b = 0; b < custom_decode_scheme[it][j].output_code_bits;b++) {
+                for (int b = 0; b < icer_custom_decode_scheme[it][j].output_code_bits; b++) {
                     reversed <<= 1;
-                    reversed |= custom_decode_scheme[it][j].output_code & 1;
-                    custom_decode_scheme[it][j].output_code >>= 1;
+                    reversed |= icer_custom_decode_scheme[it][j].output_code & 1;
+                    icer_custom_decode_scheme[it][j].output_code >>= 1;
                 }
-                custom_decode_scheme[it][j].output_code = reversed;
+                icer_custom_decode_scheme[it][j].output_code = reversed;
             }
         }
     }
@@ -116,7 +116,7 @@ void icer_init_decodescheme() {
 
 void icer_init_codingscheme() {
     for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
-        for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) custom_coding_scheme[it][j].input_code_bits = 0;
+        for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) icer_custom_coding_scheme[it][j].input_code_bits = 0;
     }
 
     INIT_CODING_SCHEME(ICER_ENC_BIN_2, 0b01, 2, 0b10, 2);
@@ -232,7 +232,7 @@ void icer_init_golombcoder() {
     for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
         if (icer_bin_coding_scheme[it] > 0) {
             unsigned int m = icer_bin_coding_scheme[it];
-            golomb_coders[it].m = m;
+            icer_golomb_coders[it].m = m;
 
             // compute ceil( log2( m ) )
             unsigned int l = 31 - __builtin_clz(m);
@@ -241,8 +241,8 @@ void icer_init_golombcoder() {
             // compute 2^l - m
             unsigned int i = icer_pow_uint(2, l) - m;
 
-            golomb_coders[it].i = i;
-            golomb_coders[it].l = l;
+            icer_golomb_coders[it].i = i;
+            icer_golomb_coders[it].l = l;
         }
     }
 }

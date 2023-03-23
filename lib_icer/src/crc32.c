@@ -1,7 +1,7 @@
 /* Crc - 32 BIT ANSI X3.66 CRC checksum files */
 
 #include <stdio.h>
-#include "crc.h"
+#include "../inc/crc.h"
 
 #ifdef __TURBOC__
 #pragma warn -cln

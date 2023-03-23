@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <time.h>
 
-#include <time.h>
 #include <stdlib.h>
 
 #include "stb_image.h"
@@ -52,8 +51,8 @@ bool compare(const unsigned char *buf1, const unsigned char *buf2, size_t len) {
 }
 
 int main() {
-    const size_t out_w = 800;
-    const size_t out_h = 600;
+    const size_t out_w = 2000;
+    const size_t out_h = 3000;
     const size_t out_channels = 1;
 
     int src_w, src_h, n;
@@ -109,12 +108,12 @@ int main() {
 
     reduce_bit_depth(compress, out_w*out_h*out_channels, bit_red);
 
-    const int datastream_size = 15000;
+    const int datastream_size = 5000000;
     uint8_t *datastream = malloc(datastream_size+100);
-    output_data_buf_typedef output;
+    icer_output_data_buf_typedef output;
     icer_init_output_struct(&output, datastream, datastream_size);
     begin = clock();
-    icer_compress_image_uint8(compress, out_w, out_h, 4, ICER_FILTER_A, 1, &output);
+    icer_compress_image_uint8(compress, out_w, out_h, 6, ICER_FILTER_F, 20, &output);
     end = clock();
 
     printf("compressed size %zu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
@@ -148,7 +147,7 @@ int main() {
 
     size_t decomp_w, decomp_h;
     begin = clock();
-    icer_decompress_image_uint8(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length, 4, ICER_FILTER_A, 1);
+    icer_decompress_image_uint8(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length, 6, ICER_FILTER_F, 20);
     end = clock();
     printf("decompress time taken: %lf\n", (float)(end-begin)/CLOCKS_PER_SEC);
 
@@ -160,19 +159,19 @@ int main() {
         return 0;
     }
 
+    if (compare(decompress, resized, out_w*out_h*out_channels)) {
+        printf("result is identical\n");
+    } else {
+        printf("result is different\n");
+    }
+
     reduce_bit_depth(resized, out_w*out_h*out_channels, bit_red);
-    icer_wavelet_transform_stages(resized, out_w, out_h, 4, ICER_FILTER_A);
+    icer_wavelet_transform_stages(resized, out_w, out_h, 6, ICER_FILTER_A);
     printf("saving transformed image to: \"%s\"\n", wavelet_filename);
     res = stbi_write_bmp(wavelet_filename, out_w, out_h, out_channels, resized);
     if (res == 0) {
       printf("save failed\nexiting...\n");
       return 0;
-    }
-
-    if (compare(decompress, resized, out_w*out_h*out_channels)) {
-        printf("result is identical\n");
-    } else {
-        printf("result is different\n");
     }
 
     free(resized);
