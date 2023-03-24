@@ -12,19 +12,19 @@ static inline int8_t get_sign_uint8(const uint8_t* data, uint8_t lsb);
 static inline int8_t get_sign_uint16(const uint16_t* data, uint8_t lsb);
 
 #ifdef USE_UINT8_FUNCTIONS
-int icer_compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+int icer_compress_bitplane_uint8(const uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                  icer_context_model_typedef *context_model,
                                  icer_encoder_context_typedef *encoder_context,
-                                 icer_packet_context* pkt_context) {
+                                 const icer_packet_context *pkt_context) {
     int res;
-    uint8_t *pos;
-    uint8_t *rowstart = data;
+    const uint8_t *pos;
+    const uint8_t *rowstart = data;
     int category;
     bool bit;
     uint8_t lsb = pkt_context->lsb;
     uint8_t mask = 0b1 << lsb;
 
-    uint8_t *h0, *h1, *v0, *v1, *d0, *d1, *d2, *d3;
+    const uint8_t *h0, *h1, *v0, *v1, *d0, *d1, *d2, *d3;
     uint8_t h = 0, v = 0, d = 0, tmp;
     int8_t sh0, sh1, sv0, sv1;
     uint8_t sh, sv;
@@ -159,10 +159,10 @@ int icer_compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, 
     return ICER_RESULT_OK;
 }
 
-int icer_decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+int icer_decompress_bitplane_uint8(uint8_t * const data, size_t plane_w, size_t plane_h, size_t rowstride,
                                    icer_context_model_typedef *context_model,
                                    icer_decoder_context_typedef *decoder_context,
-                                   icer_packet_context* pkt_context) {
+                                   const icer_packet_context *pkt_context) {
     int res;
     uint8_t *pos;
     uint8_t *rowstart = data;
@@ -303,19 +303,19 @@ int icer_decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
-int icer_compress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
-                                 icer_context_model_typedef *context_model,
-                                 icer_encoder_context_typedef *encoder_context,
-                                 icer_packet_context* pkt_context) {
+int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+                                  icer_context_model_typedef *context_model,
+                                  icer_encoder_context_typedef *encoder_context,
+                                  const icer_packet_context *pkt_context) {
     int res;
-    uint16_t *pos;
-    uint16_t *rowstart = data;
+    const uint16_t *pos;
+    const uint16_t *rowstart = data;
     int category;
     bool bit;
     uint8_t lsb = pkt_context->lsb;
     uint16_t mask = 0b1 << lsb;
 
-    uint16_t *h0, *h1, *v0, *v1, *d0, *d1, *d2, *d3;
+    const uint16_t *h0, *h1, *v0, *v1, *d0, *d1, *d2, *d3;
     uint8_t h = 0, v = 0, d = 0, tmp;
     int8_t sh0, sh1, sv0, sv1;
     uint8_t sh, sv;
@@ -450,10 +450,10 @@ int icer_compress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane_h
     return ICER_RESULT_OK;
 }
 
-int icer_decompress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
-                                   icer_context_model_typedef *context_model,
-                                   icer_decoder_context_typedef *decoder_context,
-                                   icer_packet_context* pkt_context) {
+int icer_decompress_bitplane_uint16(uint16_t * const data, size_t plane_w, size_t plane_h, size_t rowstride,
+                                    icer_context_model_typedef *context_model,
+                                    icer_decoder_context_typedef *decoder_context,
+                                    const icer_packet_context *pkt_context) {
     int res;
     uint16_t *pos;
     uint16_t *rowstart = data;

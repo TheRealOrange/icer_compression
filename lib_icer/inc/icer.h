@@ -2,10 +2,9 @@
 #define ICER_COMPRESSION_ICER_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#include "crc.h"
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -281,7 +280,7 @@ void icer_init_golombcoder();
 #ifdef USE_UINT8_FUNCTIONS
 int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt,
                               uint8_t segments, icer_output_data_buf_typedef *output_data);
-int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, uint8_t *datastream,
+int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, const uint8_t *datastream,
                                 size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments);
 
 
@@ -299,19 +298,19 @@ void icer_reverse_uint8(uint8_t *data, size_t start, size_t end, size_t stride);
 void icer_interleave_uint8(uint8_t *data, size_t len, size_t stride);
 void icer_deinterleave_uint8(uint8_t *data, size_t len, size_t stride);
 
-int icer_compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
-                                  icer_output_data_buf_typedef *output_data);
-int icer_compress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
+                                  icer_output_data_buf_typedef *const output_data);
+int icer_compress_bitplane_uint8(const uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                  icer_context_model_typedef *context_model,
                                  icer_encoder_context_typedef *encoder_context,
-                                 icer_packet_context *pkt_context);
+                                 const icer_packet_context *pkt_context);
 
-int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride,
+int icer_decompress_partition_uint8(uint8_t *const data, const partition_param_typdef *params, size_t rowstride,
                                     icer_image_segment_typedef *seg[][7]);
-int icer_decompress_bitplane_uint8(uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+int icer_decompress_bitplane_uint8(uint8_t *const data, size_t plane_w, size_t plane_h, size_t rowstride,
                                    icer_context_model_typedef *context_model,
                                    icer_decoder_context_typedef *decoder_context,
-                                   icer_packet_context* pkt_context);
+                                   const icer_packet_context *pkt_context);
 
 void icer_to_sign_magnitude_int8(uint8_t *data, size_t len);
 void icer_from_sign_magnitude_int8(uint8_t *data, size_t len);
@@ -320,8 +319,8 @@ void icer_from_sign_magnitude_int8(uint8_t *data, size_t len);
 #ifdef USE_UINT16_FUNCTIONS
 int icer_compress_image_uint16(uint16_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt,
                               uint8_t segments, icer_output_data_buf_typedef *output_data);
-int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, uint8_t *datastream,
-                                size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments);
+int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, const uint8_t *datastream,
+                                 size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments);
 
 
 int icer_wavelet_transform_stages_uint16(uint16_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
@@ -338,25 +337,25 @@ void icer_reverse_uint16(uint16_t *data, size_t start, size_t end, size_t stride
 void icer_interleave_uint16(uint16_t *data, size_t len, size_t stride);
 void icer_deinterleave_uint16(uint16_t *data, size_t len, size_t stride);
 
-int icer_compress_partition_uint16(uint16_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
-                                  icer_output_data_buf_typedef *output_data);
-int icer_compress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
-                                 icer_context_model_typedef *context_model,
-                                 icer_encoder_context_typedef *encoder_context,
-                                 icer_packet_context *pkt_context);
+int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride, const icer_packet_context *pkt_context,
+                                   icer_output_data_buf_typedef *output_data);
+int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
+                                  icer_context_model_typedef *context_model,
+                                  icer_encoder_context_typedef *encoder_context,
+                                  const icer_packet_context *pkt_context);
 
-int icer_decompress_partition_uint16(uint16_t *data, partition_param_typdef *params, size_t rowstride,
+int icer_decompress_partition_uint16(uint16_t *data, const partition_param_typdef *params, size_t rowstride,
                                     icer_image_segment_typedef *seg[][15]);
-int icer_decompress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
-                                   icer_context_model_typedef *context_model,
-                                   icer_decoder_context_typedef *decoder_context,
-                                   icer_packet_context* pkt_context);
+int icer_decompress_bitplane_uint16(uint16_t *const data, size_t plane_w, size_t plane_h, size_t rowstride,
+                                    icer_context_model_typedef *context_model,
+                                    icer_decoder_context_typedef *decoder_context,
+                                    const icer_packet_context *pkt_context);
 
 void icer_to_sign_magnitude_int16(uint16_t *data, size_t len);
 void icer_from_sign_magnitude_int16(uint16_t *data, size_t len);
 #endif
 
-size_t icer_find_packet_in_bytestream(icer_image_segment_typedef **seg, uint8_t *datastream, size_t data_length);
+int icer_find_packet_in_bytestream(icer_image_segment_typedef **seg, const uint8_t *datastream, size_t data_length, size_t * offset);
 
 uint8_t icer_find_k(size_t len);
 size_t icer_get_dim_n_low_stages(size_t dim, uint8_t stages);
@@ -379,7 +378,7 @@ int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll
 
 uint32_t icer_calculate_packet_crc32(icer_image_segment_typedef *pkt);
 uint32_t icer_calculate_segment_crc32(icer_image_segment_typedef *pkt);
-int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data_buf_typedef *output_data, uint8_t segment_num, icer_packet_context *context);
+int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data_buf_typedef *output_data, uint8_t segment_num, const icer_packet_context *context);
 
 void icer_init_output_struct(icer_output_data_buf_typedef *out, uint8_t *data, size_t len);
 int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt);

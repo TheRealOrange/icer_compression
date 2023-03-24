@@ -3,6 +3,7 @@
 //
 
 #include "icer.h"
+#include "crc.h"
 
 /* compute which bin of the interleaved entropy coder to place a bit to be encoded based of the probability cutoffs of each bin */
 int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt) {

@@ -54,11 +54,11 @@ int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll
 }
 
 #ifdef USE_UINT8_FUNCTIONS
-int icer_compress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
-                                  icer_output_data_buf_typedef *output_data) {
+int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
+                                  icer_output_data_buf_typedef * const output_data) {
     int res;
     size_t segment_w, segment_h;
-    uint8_t *segment_start;
+    const uint8_t *segment_start;
     uint16_t segment_num = 0;
 
     size_t partition_col_ind;
@@ -160,7 +160,7 @@ int icer_compress_partition_uint8(uint8_t *data, partition_param_typdef *params,
     return ICER_RESULT_OK;
 }
 
-int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *params, size_t rowstride,
+int icer_decompress_partition_uint8(uint8_t * const data, const partition_param_typdef *params, size_t rowstride,
                                     icer_image_segment_typedef *seg[][7]) {
     int res;
     size_t segment_w, segment_h;
@@ -265,11 +265,11 @@ int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *param
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
-int icer_compress_partition_uint16(uint16_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
-                                  icer_output_data_buf_typedef *output_data) {
+int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride, const icer_packet_context *pkt_context,
+                                   icer_output_data_buf_typedef *output_data) {
     int res;
     size_t segment_w, segment_h;
-    uint16_t *segment_start;
+    const uint16_t *segment_start;
     uint16_t segment_num = 0;
 
     size_t partition_col_ind;
@@ -371,7 +371,7 @@ int icer_compress_partition_uint16(uint16_t *data, partition_param_typdef *param
     return ICER_RESULT_OK;
 }
 
-int icer_decompress_partition_uint16(uint16_t *data, partition_param_typdef *params, size_t rowstride,
+int icer_decompress_partition_uint16(uint16_t * const data, const partition_param_typdef * params, size_t rowstride,
                                     icer_image_segment_typedef *seg[][15]) {
     int res;
     size_t segment_w, segment_h;

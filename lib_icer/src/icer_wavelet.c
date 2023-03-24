@@ -5,7 +5,7 @@
 #include "icer.h"
 
 #ifdef USE_UINT8_FUNCTIONS
-int icer_wavelet_transform_stages_uint8(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages,
+int icer_wavelet_transform_stages_uint8(uint8_t * const image, size_t image_w, size_t image_h, uint8_t stages,
                                         enum icer_filter_types filt) {
     bool overflow = false;
     size_t low_w = image_w;
@@ -27,7 +27,7 @@ int icer_wavelet_transform_stages_uint8(uint8_t *image, size_t image_w, size_t i
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
 
-int icer_inverse_wavelet_transform_stages_uint8(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages,
+int icer_inverse_wavelet_transform_stages_uint8(uint8_t * const image, size_t image_w, size_t image_h, uint8_t stages,
                                                 enum icer_filter_types filt) {
     bool overflow = false;
     size_t low_w;
@@ -53,7 +53,7 @@ int icer_inverse_wavelet_transform_stages_uint8(uint8_t *image, size_t image_w, 
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
-int icer_wavelet_transform_stages_uint16(uint16_t *image, size_t image_w, size_t image_h, uint8_t stages,
+int icer_wavelet_transform_stages_uint16(uint16_t * const image, size_t image_w, size_t image_h, uint8_t stages,
                                         enum icer_filter_types filt) {
     bool overflow = false;
     size_t low_w = image_w;
@@ -75,7 +75,7 @@ int icer_wavelet_transform_stages_uint16(uint16_t *image, size_t image_w, size_t
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
 
-int icer_inverse_wavelet_transform_stages_uint16(uint16_t *image, size_t image_w, size_t image_h, uint8_t stages,
+int icer_inverse_wavelet_transform_stages_uint16(uint16_t * const image, size_t image_w, size_t image_h, uint8_t stages,
                                                 enum icer_filter_types filt) {
     bool overflow = false;
     size_t low_w;
@@ -109,7 +109,7 @@ size_t icer_get_dim_n_high_stages(size_t dim, uint8_t stages) {
 }
 
 #ifdef USE_UINT8_FUNCTIONS
-int icer_wavelet_transform_2d_uint8(uint8_t *image, size_t image_w, size_t image_h, size_t rowstride,
+int icer_wavelet_transform_2d_uint8(uint8_t * const image, size_t image_w, size_t image_h, size_t rowstride,
                                     enum icer_filter_types filt) {
     bool overflow = false;
     uint8_t *rowstart = image;
@@ -127,7 +127,7 @@ int icer_wavelet_transform_2d_uint8(uint8_t *image, size_t image_w, size_t image
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
 
-int icer_inverse_wavelet_transform_2d_uint8(uint8_t *image, size_t image_w, size_t image_h, size_t rowstride,
+int icer_inverse_wavelet_transform_2d_uint8(uint8_t * const image, size_t image_w, size_t image_h, size_t rowstride,
                                             enum icer_filter_types filt) {
     bool overflow = false;
     uint8_t *colstart = image;
@@ -147,7 +147,7 @@ int icer_inverse_wavelet_transform_2d_uint8(uint8_t *image, size_t image_w, size
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
-int icer_wavelet_transform_2d_uint16(uint16_t *image, size_t image_w, size_t image_h, size_t rowstride,
+int icer_wavelet_transform_2d_uint16(uint16_t * const image, size_t image_w, size_t image_h, size_t rowstride,
                                     enum icer_filter_types filt) {
     bool overflow = false;
     uint16_t *rowstart = image;
@@ -165,7 +165,7 @@ int icer_wavelet_transform_2d_uint16(uint16_t *image, size_t image_w, size_t ima
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
 
-int icer_inverse_wavelet_transform_2d_uint16(uint16_t *image, size_t image_w, size_t image_h, size_t rowstride,
+int icer_inverse_wavelet_transform_2d_uint16(uint16_t * const image, size_t image_w, size_t image_h, size_t rowstride,
                                             enum icer_filter_types filt) {
     bool overflow = false;
     uint16_t *colstart = image;
@@ -185,27 +185,27 @@ int icer_inverse_wavelet_transform_2d_uint16(uint16_t *image, size_t image_w, si
 #endif
 
 #ifdef USE_UINT8_FUNCTIONS
-static inline int16_t get_r_int8(int8_t *data, size_t n, size_t stride) {
+static inline int16_t get_r_int8(const int8_t *data, size_t n, size_t stride) {
     return (n > 0) ? (int16_t) data[(n - 1) * stride] - (int16_t) data[n * stride] : 1;
 }
 
-static inline int16_t get_d_int8(int8_t *data, size_t n, size_t stride, size_t offset, size_t max, bool isodd) {
+static inline int16_t get_d_int8(const int8_t *data, size_t n, size_t stride, size_t offset, size_t max, bool isodd) {
     return (isodd && n == max) ? 0 : (int16_t) data[(offset + n) * stride];
 }
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
-static inline int16_t get_r_int16(int16_t *data, size_t n, size_t stride) {
+static inline int16_t get_r_int16(const int16_t *data, size_t n, size_t stride) {
     return (n > 0) ? data[(n - 1) * stride] - data[n * stride] : 1;
 }
 
-static inline int16_t get_d_int16(int16_t *data, size_t n, size_t stride, size_t offset, size_t max, bool isodd) {
+static inline int16_t get_d_int16(const int16_t *data, size_t n, size_t stride, size_t offset, size_t max, bool isodd) {
     return (isodd && n == max) ? 0 : data[(offset + n) * stride];
 }
 #endif
 
 #ifdef USE_UINT8_FUNCTIONS
-int icer_wavelet_transform_1d_uint8(uint8_t *data, size_t N, size_t stride, enum icer_filter_types filt) {
+int icer_wavelet_transform_1d_uint8(uint8_t * const data, size_t N, size_t stride, enum icer_filter_types filt) {
     size_t low_N, high_N;
     bool is_odd = false;
     bool overflow = false;
@@ -287,7 +287,7 @@ int icer_wavelet_transform_1d_uint8(uint8_t *data, size_t N, size_t stride, enum
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
 
-int icer_inverse_wavelet_transform_1d_uint8(uint8_t *data, size_t N, size_t stride, enum icer_filter_types filt) {
+int icer_inverse_wavelet_transform_1d_uint8(uint8_t * const data, size_t N, size_t stride, enum icer_filter_types filt) {
     size_t low_N, high_N;
     bool is_odd = false;
     bool overflow = false;
@@ -374,7 +374,7 @@ int icer_inverse_wavelet_transform_1d_uint8(uint8_t *data, size_t N, size_t stri
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
-int icer_wavelet_transform_1d_uint16(uint16_t *data, size_t N, size_t stride, enum icer_filter_types filt) {
+int icer_wavelet_transform_1d_uint16(uint16_t * const data, size_t N, size_t stride, enum icer_filter_types filt) {
     size_t low_N, high_N;
     bool is_odd = false;
     bool overflow = false;
@@ -456,7 +456,7 @@ int icer_wavelet_transform_1d_uint16(uint16_t *data, size_t N, size_t stride, en
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
 
-int icer_inverse_wavelet_transform_1d_uint16(uint16_t *data, size_t N, size_t stride, enum icer_filter_types filt) {
+int icer_inverse_wavelet_transform_1d_uint16(uint16_t * const data, size_t N, size_t stride, enum icer_filter_types filt) {
     size_t low_N, high_N;
     bool is_odd = false;
     bool overflow = false;
@@ -544,7 +544,7 @@ int icer_inverse_wavelet_transform_1d_uint16(uint16_t *data, size_t N, size_t st
 
 #ifdef USE_UINT8_FUNCTIONS
 /* interleaving and deinterleaving helper functions */
-void icer_reverse_uint8(uint8_t *data, size_t start, size_t end, size_t stride) {
+void icer_reverse_uint8(uint8_t * const data, size_t start, size_t end, size_t stride) {
     size_t n1, n2;
     uint8_t swap;
     while (start < end) {
@@ -559,7 +559,7 @@ void icer_reverse_uint8(uint8_t *data, size_t start, size_t end, size_t stride) 
     }
 }
 
-void icer_interleave_uint8(uint8_t *data, size_t len, size_t stride) {
+void icer_interleave_uint8(uint8_t * const data, size_t len, size_t stride) {
     size_t n = len;
     size_t processed = 0, left, halfleft;
     size_t segment, halfseg;
@@ -607,7 +607,7 @@ void icer_interleave_uint8(uint8_t *data, size_t len, size_t stride) {
     }
 }
 
-void icer_deinterleave_uint8(uint8_t *data, size_t len, size_t stride) {
+void icer_deinterleave_uint8(uint8_t * const data, size_t len, size_t stride) {
     size_t n = len;
     size_t processed = 0;
     size_t segment, halfseg;
@@ -653,7 +653,7 @@ void icer_deinterleave_uint8(uint8_t *data, size_t len, size_t stride) {
 
 #ifdef USE_UINT16_FUNCTIONS
 /* interleaving and deinterleaving helper functions */
-void icer_reverse_uint16(uint16_t *data, size_t start, size_t end, size_t stride) {
+void icer_reverse_uint16(uint16_t * const data, size_t start, size_t end, size_t stride) {
     size_t n1, n2;
     uint16_t swap;
     while (start < end) {
@@ -668,7 +668,7 @@ void icer_reverse_uint16(uint16_t *data, size_t start, size_t end, size_t stride
     }
 }
 
-void icer_interleave_uint16(uint16_t *data, size_t len, size_t stride) {
+void icer_interleave_uint16(uint16_t * const data, size_t len, size_t stride) {
     size_t n = len;
     size_t processed = 0, left, halfleft;
     size_t segment, halfseg;
@@ -716,7 +716,7 @@ void icer_interleave_uint16(uint16_t *data, size_t len, size_t stride) {
     }
 }
 
-void icer_deinterleave_uint16(uint16_t *data, size_t len, size_t stride) {
+void icer_deinterleave_uint16(uint16_t * const data, size_t len, size_t stride) {
     size_t n = len;
     size_t processed = 0;
     size_t segment, halfseg;
@@ -788,7 +788,7 @@ uint8_t icer_find_k(size_t len) {
 
 #ifdef USE_UINT8_FUNCTIONS
 /* this assumes that the platform you are running the code on stores numbers as 2's complement */
-void icer_to_sign_magnitude_int8(uint8_t *data, size_t len) {
+void icer_to_sign_magnitude_int8(uint8_t * const data, size_t len) {
     uint8_t mask;
     for (uint8_t *it = data; it < data + len; it++) {
         mask = (int8_t) (*it) >> 7;
@@ -797,7 +797,7 @@ void icer_to_sign_magnitude_int8(uint8_t *data, size_t len) {
 }
 
 /* this assumes that the platform you are running the code on stores numbers as 2's complement */
-void icer_from_sign_magnitude_int8(uint8_t *data, size_t len) {
+void icer_from_sign_magnitude_int8(uint8_t * const data, size_t len) {
     uint8_t mask;
     for (uint8_t *it = data; it < data + len; it++) {
         mask = (int8_t) (*it) >> 7;
@@ -808,7 +808,7 @@ void icer_from_sign_magnitude_int8(uint8_t *data, size_t len) {
 
 #ifdef USE_UINT16_FUNCTIONS
 /* this assumes that the platform you are running the code on stores numbers as 2's complement */
-void icer_to_sign_magnitude_int16(uint16_t *data, size_t len) {
+void icer_to_sign_magnitude_int16(uint16_t * const data, size_t len) {
     uint16_t mask;
     for (uint16_t *it = data; it < data + len; it++) {
         mask = (int16_t) (*it) >> 15;
@@ -817,7 +817,7 @@ void icer_to_sign_magnitude_int16(uint16_t *data, size_t len) {
 }
 
 /* this assumes that the platform you are running the code on stores numbers as 2's complement */
-void icer_from_sign_magnitude_int16(uint16_t *data, size_t len) {
+void icer_from_sign_magnitude_int16(uint16_t * const data, size_t len) {
     uint16_t mask;
     for (uint16_t *it = data; it < data + len; it++) {
         mask = (int16_t) (*it) >> 15;
