@@ -194,14 +194,14 @@ int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *param
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
             partition_col_ind += segment_w;
 
-            lsb = 6;
+            lsb = ICER_BITPLANES_TO_COMPRESS_8 - 1;
             /* decompress starting from the msb, and stop whenever there is a missing bitplane */
             /* it is impossible to decompress subsequent bit planes if there is a missing bit plane, due to how the context
              * modeller works; it relies on the previously decoded bbitplanes to determine a bit's context */
             while (seg[segment_num][lsb] != NULL && lsb >= 0) {
-                pkt_context.subband_type = seg[segment_num][6]->subband_type;
+                pkt_context.subband_type = seg[segment_num][ICER_BITPLANES_TO_COMPRESS_8 - 1]->subband_type;
                 pkt_context.lsb = lsb;
-                pkt_context.decomp_level = seg[segment_num][6]->decomp_level;
+                pkt_context.decomp_level = seg[segment_num][ICER_BITPLANES_TO_COMPRESS_8 - 1]->decomp_level;
                 icer_init_context_model_vals(&context_model, pkt_context.subband_type);
                 icer_init_entropy_decoder_context(&context, (uint8_t *) seg[segment_num][lsb] +
                                                             sizeof(icer_image_segment_typedef),
@@ -237,14 +237,14 @@ int icer_decompress_partition_uint8(uint8_t *data, partition_param_typdef *param
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
             partition_col_ind += segment_w;
 
-            lsb = 6;
+            lsb = ICER_BITPLANES_TO_COMPRESS_8 - 1;
             /* decompress starting from the msb, and stop whenever there is a missing bitplane */
             /* it is impossible to decompress subsequent bit planes if there is a missing bit plane, due to how the context
              * modeller works; it relies on the previously decoded bbitplanes to determine a bit's context */
             while (seg[segment_num][lsb] != NULL && lsb >= 0) {
-                pkt_context.subband_type = seg[segment_num][6]->subband_type;
+                pkt_context.subband_type = seg[segment_num][ICER_BITPLANES_TO_COMPRESS_8 - 1]->subband_type;
                 pkt_context.lsb = lsb;
-                pkt_context.decomp_level = seg[segment_num][6]->decomp_level;
+                pkt_context.decomp_level = seg[segment_num][ICER_BITPLANES_TO_COMPRESS_8 - 1]->decomp_level;
                 icer_init_context_model_vals(&context_model, pkt_context.subband_type);
                 icer_init_entropy_decoder_context(&context, (uint8_t *) seg[segment_num][lsb] +
                                                             sizeof(icer_image_segment_typedef),
@@ -405,14 +405,14 @@ int icer_decompress_partition_uint16(uint16_t *data, partition_param_typdef *par
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
             partition_col_ind += segment_w;
 
-            lsb = 14;
+            lsb = ICER_BITPLANES_TO_COMPRESS_16 - 1;
             /* decompress starting from the msb, and stop whenever there is a missing bitplane */
             /* it is impossible to decompress subsequent bit planes if there is a missing bit plane, due to how the context
              * modeller works; it relies on the previously decoded bbitplanes to determine a bit's context */
             while (seg[segment_num][lsb] != NULL && lsb >= 0) {
-                pkt_context.subband_type = seg[segment_num][14]->subband_type;
+                pkt_context.subband_type = seg[segment_num][ICER_BITPLANES_TO_COMPRESS_16 - 1]->subband_type;
                 pkt_context.lsb = lsb;
-                pkt_context.decomp_level = seg[segment_num][14]->decomp_level;
+                pkt_context.decomp_level = seg[segment_num][ICER_BITPLANES_TO_COMPRESS_16 - 1]->decomp_level;
                 icer_init_context_model_vals(&context_model, pkt_context.subband_type);
                 icer_init_entropy_decoder_context(&context, (uint8_t *) seg[segment_num][lsb] +
                                                             sizeof(icer_image_segment_typedef),
@@ -448,14 +448,14 @@ int icer_decompress_partition_uint16(uint16_t *data, partition_param_typdef *par
             segment_start = data + partition_row_ind * rowstride + partition_col_ind;
             partition_col_ind += segment_w;
 
-            lsb = 14;
+            lsb = ICER_BITPLANES_TO_COMPRESS_16 - 1;
             /* decompress starting from the msb, and stop whenever there is a missing bitplane */
             /* it is impossible to decompress subsequent bit planes if there is a missing bit plane, due to how the context
              * modeller works; it relies on the previously decoded bbitplanes to determine a bit's context */
             while (seg[segment_num][lsb] != NULL && lsb >= 0) {
-                pkt_context.subband_type = seg[segment_num][14]->subband_type;
+                pkt_context.subband_type = seg[segment_num][ICER_BITPLANES_TO_COMPRESS_16 - 1]->subband_type;
                 pkt_context.lsb = lsb;
-                pkt_context.decomp_level = seg[segment_num][14]->decomp_level;
+                pkt_context.decomp_level = seg[segment_num][ICER_BITPLANES_TO_COMPRESS_16 - 1]->decomp_level;
                 icer_init_context_model_vals(&context_model, pkt_context.subband_type);
                 icer_init_entropy_decoder_context(&context, (uint8_t *) seg[segment_num][lsb] +
                                                             sizeof(icer_image_segment_typedef),

@@ -30,6 +30,9 @@ uint32_t __inline __clz( uint32_t value ) {
 #define ICER_MAX_SEGMENTS 32
 #define ICER_MAX_DECOMP_STAGES 6
 #define ICER_MAX_PACKETS 300
+#define ICER_MAX_PACKETS_16 800
+#define ICER_BITPLANES_TO_COMPRESS_8 7
+#define ICER_BITPLANES_TO_COMPRESS_16 9
 
 #define USE_UINT8_FUNCTIONS
 #define USE_UINT16_FUNCTIONS
@@ -43,7 +46,8 @@ enum icer_status {
     ICER_BYTE_QUOTA_EXCEEDED = -5,
     ICER_BITPLANE_OUT_OF_RANGE = -6,
     ICER_DECODER_OUT_OF_DATA = -7,
-    ICER_DECODED_INVALID_DATA = -8
+    ICER_DECODED_INVALID_DATA = -8,
+    ICER_PACKET_COUNT_EXCEEDED = -9
 };
 
 enum icer_filter_types {
@@ -207,12 +211,13 @@ typedef struct {
     uint8_t subband_type;
     uint8_t ll_mean_val;
     uint8_t lsb;
-    uint32_t priority;
+    uint64_t priority;
     size_t image_w;
     size_t image_h;
 } icer_packet_context;
 
 extern icer_packet_context icer_packets[ICER_MAX_PACKETS];
+extern icer_packet_context icer_packets_16[ICER_MAX_PACKETS_16];
 
 #define ICER_PACKET_PREAMBLE 0x605B
 

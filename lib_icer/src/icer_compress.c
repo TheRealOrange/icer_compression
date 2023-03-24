@@ -5,11 +5,12 @@
 #include "icer.h"
 #include <string.h>
 
-icer_packet_context icer_packets[ICER_MAX_PACKETS];
 #ifdef USE_UINT8_FUNCTIONS
+icer_packet_context icer_packets[ICER_MAX_PACKETS];
 icer_image_segment_typedef *icer_reconstruct_data_8[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
 #endif
 #ifdef USE_UINT16_FUNCTIONS
+icer_packet_context icer_packets_16[ICER_MAX_PACKETS_16];
 icer_image_segment_typedef *icer_reconstruct_data_16[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
 #endif
 
@@ -60,7 +61,7 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
     uint32_t ind = 0;
     for (uint8_t curr_stage = 1;curr_stage <= stages;curr_stage++) {
         priority = icer_pow_uint(2, curr_stage);
-        for (uint8_t lsb = 0;lsb < 7;lsb++) {
+        for (uint8_t lsb = 0;lsb < ICER_BITPLANES_TO_COMPRESS_8;lsb++) {
             icer_packets[ind].subband_type = ICER_SUBBAND_HL;
             icer_packets[ind].decomp_level = curr_stage;
             icer_packets[ind].ll_mean_val = ll_mean;
@@ -68,7 +69,7 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
             icer_packets[ind].priority = priority << lsb;
             icer_packets[ind].image_w = image_w;
             icer_packets[ind].image_h = image_h;
-            ind++;
+            ind++; if (ind > ICER_MAX_PACKETS) return ICER_PACKET_COUNT_EXCEEDED;
 
             icer_packets[ind].subband_type = ICER_SUBBAND_LH;
             icer_packets[ind].decomp_level = curr_stage;
@@ -77,7 +78,7 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
             icer_packets[ind].priority = priority << lsb;
             icer_packets[ind].image_w = image_w;
             icer_packets[ind].image_h = image_h;
-            ind++;
+            ind++; if (ind > ICER_MAX_PACKETS) return ICER_PACKET_COUNT_EXCEEDED;
 
             icer_packets[ind].subband_type = ICER_SUBBAND_HH;
             icer_packets[ind].decomp_level = curr_stage;
@@ -86,12 +87,12 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
             icer_packets[ind].priority = ((priority / 2) << lsb) + 1;
             icer_packets[ind].image_w = image_w;
             icer_packets[ind].image_h = image_h;
-            ind++;
+            ind++; if (ind > ICER_MAX_PACKETS) return ICER_PACKET_COUNT_EXCEEDED;
         }
     }
 
     priority = icer_pow_uint(2, stages);
-    for (uint8_t lsb = 0;lsb < 7;lsb++) {
+    for (uint8_t lsb = 0;lsb < ICER_BITPLANES_TO_COMPRESS_8;lsb++) {
         icer_packets[ind].subband_type = ICER_SUBBAND_LL;
         icer_packets[ind].decomp_level = stages;
         icer_packets[ind].ll_mean_val = ll_mean;
@@ -99,7 +100,7 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
         icer_packets[ind].priority = (2 * priority) << lsb;
         icer_packets[ind].image_w = image_w;
         icer_packets[ind].image_h = image_h;
-        ind++;
+        ind++; if (ind > ICER_MAX_PACKETS) return ICER_PACKET_COUNT_EXCEEDED;
 
         icer_packets[ind].subband_type = ICER_SUBBAND_LL;
         icer_packets[ind].decomp_level = stages;
@@ -108,7 +109,7 @@ int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, ui
         icer_packets[ind].priority = priority << lsb;
         icer_packets[ind].image_w = image_w;
         icer_packets[ind].image_h = image_h;
-        ind++;
+        ind++; if (ind > ICER_MAX_PACKETS) return ICER_PACKET_COUNT_EXCEEDED;
     }
 
     qsort(icer_packets, ind, sizeof(icer_packet_context), comp_packet);
@@ -150,7 +151,7 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
     for (int i = 0;i <= ICER_MAX_DECOMP_STAGES;i++) {
         for (int j = 0;j <= ICER_SUBBAND_MAX;j++) {
             for (int k = 0;k <= ICER_MAX_SEGMENTS;k++) {
-                for (int lsb = 0;lsb < 7;lsb++) {
+                for (int lsb = 0;lsb < ICER_BITPLANES_TO_COMPRESS_8;lsb++) {
                     icer_reconstruct_data_8[i][j][k][lsb] = NULL;
                 }
             }
@@ -288,87 +289,87 @@ int icer_compress_image_uint16(uint16_t *image, size_t image_w, size_t image_h, 
 
     icer_to_sign_magnitude_int16(image, image_w * image_h);
 
-    uint32_t priority = 0;
+    uint64_t priority = 0;
     uint32_t ind = 0;
     for (uint8_t curr_stage = 1;curr_stage <= stages;curr_stage++) {
         priority = icer_pow_uint(2, curr_stage);
-        for (uint8_t lsb = 0;lsb < 15;lsb++) {
-            icer_packets[ind].subband_type = ICER_SUBBAND_HL;
-            icer_packets[ind].decomp_level = curr_stage;
-            icer_packets[ind].ll_mean_val = ll_mean;
-            icer_packets[ind].lsb = lsb;
-            icer_packets[ind].priority = priority << lsb;
-            icer_packets[ind].image_w = image_w;
-            icer_packets[ind].image_h = image_h;
-            ind++;
+        for (uint8_t lsb = 0;lsb < ICER_BITPLANES_TO_COMPRESS_16;lsb++) {
+            icer_packets_16[ind].subband_type = ICER_SUBBAND_HL;
+            icer_packets_16[ind].decomp_level = curr_stage;
+            icer_packets_16[ind].ll_mean_val = ll_mean;
+            icer_packets_16[ind].lsb = lsb;
+            icer_packets_16[ind].priority = priority << lsb;
+            icer_packets_16[ind].image_w = image_w;
+            icer_packets_16[ind].image_h = image_h;
+            ind++; if (ind > ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
 
-            icer_packets[ind].subband_type = ICER_SUBBAND_LH;
-            icer_packets[ind].decomp_level = curr_stage;
-            icer_packets[ind].ll_mean_val = ll_mean;
-            icer_packets[ind].lsb = lsb;
-            icer_packets[ind].priority = priority << lsb;
-            icer_packets[ind].image_w = image_w;
-            icer_packets[ind].image_h = image_h;
-            ind++;
+            icer_packets_16[ind].subband_type = ICER_SUBBAND_LH;
+            icer_packets_16[ind].decomp_level = curr_stage;
+            icer_packets_16[ind].ll_mean_val = ll_mean;
+            icer_packets_16[ind].lsb = lsb;
+            icer_packets_16[ind].priority = priority << lsb;
+            icer_packets_16[ind].image_w = image_w;
+            icer_packets_16[ind].image_h = image_h;
+            ind++; if (ind > ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
 
-            icer_packets[ind].subband_type = ICER_SUBBAND_HH;
-            icer_packets[ind].decomp_level = curr_stage;
-            icer_packets[ind].ll_mean_val = ll_mean;
-            icer_packets[ind].lsb = lsb;
-            icer_packets[ind].priority = ((priority / 2) << lsb) + 1;
-            icer_packets[ind].image_w = image_w;
-            icer_packets[ind].image_h = image_h;
-            ind++;
+            icer_packets_16[ind].subband_type = ICER_SUBBAND_HH;
+            icer_packets_16[ind].decomp_level = curr_stage;
+            icer_packets_16[ind].ll_mean_val = ll_mean;
+            icer_packets_16[ind].lsb = lsb;
+            icer_packets_16[ind].priority = ((priority / 2) << lsb) + 1;
+            icer_packets_16[ind].image_w = image_w;
+            icer_packets_16[ind].image_h = image_h;
+            ind++; if (ind > ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
         }
     }
 
     priority = icer_pow_uint(2, stages);
-    for (uint8_t lsb = 0;lsb < 15;lsb++) {
-        icer_packets[ind].subband_type = ICER_SUBBAND_LL;
-        icer_packets[ind].decomp_level = stages;
-        icer_packets[ind].ll_mean_val = ll_mean;
-        icer_packets[ind].lsb = lsb;
-        icer_packets[ind].priority = (2 * priority) << lsb;
-        icer_packets[ind].image_w = image_w;
-        icer_packets[ind].image_h = image_h;
-        ind++;
+    for (uint8_t lsb = 0;lsb < ICER_BITPLANES_TO_COMPRESS_16;lsb++) {
+        icer_packets_16[ind].subband_type = ICER_SUBBAND_LL;
+        icer_packets_16[ind].decomp_level = stages;
+        icer_packets_16[ind].ll_mean_val = ll_mean;
+        icer_packets_16[ind].lsb = lsb;
+        icer_packets_16[ind].priority = (2 * priority) << lsb;
+        icer_packets_16[ind].image_w = image_w;
+        icer_packets_16[ind].image_h = image_h;
+        ind++; if (ind > ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
 
-        icer_packets[ind].subband_type = ICER_SUBBAND_LL;
-        icer_packets[ind].decomp_level = stages;
-        icer_packets[ind].ll_mean_val = ll_mean;
-        icer_packets[ind].lsb = lsb;
-        icer_packets[ind].priority = priority << lsb;
-        icer_packets[ind].image_w = image_w;
-        icer_packets[ind].image_h = image_h;
-        ind++;
+        icer_packets_16[ind].subband_type = ICER_SUBBAND_LL;
+        icer_packets_16[ind].decomp_level = stages;
+        icer_packets_16[ind].ll_mean_val = ll_mean;
+        icer_packets_16[ind].lsb = lsb;
+        icer_packets_16[ind].priority = priority << lsb;
+        icer_packets_16[ind].image_w = image_w;
+        icer_packets_16[ind].image_h = image_h;
+        ind++; if (ind > ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
     }
 
-    qsort(icer_packets, ind, sizeof(icer_packet_context), comp_packet);
+    qsort(icer_packets_16, ind, sizeof(icer_packet_context), comp_packet);
 
     partition_param_typdef partition_params;
     uint16_t *data_start = image;
     for (size_t it = 0;it < ind;it++) {
-        if (icer_packets[it].subband_type == ICER_SUBBAND_LL) {
-            ll_w = icer_get_dim_n_low_stages(image_w, icer_packets[it].decomp_level);
-            ll_h = icer_get_dim_n_low_stages(image_h, icer_packets[it].decomp_level);
+        if (icer_packets_16[it].subband_type == ICER_SUBBAND_LL) {
+            ll_w = icer_get_dim_n_low_stages(image_w, icer_packets_16[it].decomp_level);
+            ll_h = icer_get_dim_n_low_stages(image_h, icer_packets_16[it].decomp_level);
             data_start = image;
-        } else if (icer_packets[it].subband_type == ICER_SUBBAND_HL) {
-            ll_w = icer_get_dim_n_high_stages(image_w, icer_packets[it].decomp_level);
-            ll_h = icer_get_dim_n_low_stages(image_h, icer_packets[it].decomp_level);
-            data_start = image + icer_get_dim_n_low_stages(image_w, icer_packets[it].decomp_level);
-        } else if (icer_packets[it].subband_type == ICER_SUBBAND_LH) {
-            ll_w = icer_get_dim_n_low_stages(image_w, icer_packets[it].decomp_level);
-            ll_h = icer_get_dim_n_high_stages(image_h, icer_packets[it].decomp_level);
-            data_start = image + icer_get_dim_n_low_stages(image_h, icer_packets[it].decomp_level) * image_w;
-        } else if (icer_packets[it].subband_type == ICER_SUBBAND_HH) {
-            ll_w = icer_get_dim_n_high_stages(image_w, icer_packets[it].decomp_level);
-            ll_h = icer_get_dim_n_high_stages(image_h, icer_packets[it].decomp_level);
-            data_start = image + icer_get_dim_n_low_stages(image_h, icer_packets[it].decomp_level) * image_w +
-                         icer_get_dim_n_low_stages(image_w, icer_packets[it].decomp_level);
+        } else if (icer_packets_16[it].subband_type == ICER_SUBBAND_HL) {
+            ll_w = icer_get_dim_n_high_stages(image_w, icer_packets_16[it].decomp_level);
+            ll_h = icer_get_dim_n_low_stages(image_h, icer_packets_16[it].decomp_level);
+            data_start = image + icer_get_dim_n_low_stages(image_w, icer_packets_16[it].decomp_level);
+        } else if (icer_packets_16[it].subband_type == ICER_SUBBAND_LH) {
+            ll_w = icer_get_dim_n_low_stages(image_w, icer_packets_16[it].decomp_level);
+            ll_h = icer_get_dim_n_high_stages(image_h, icer_packets_16[it].decomp_level);
+            data_start = image + icer_get_dim_n_low_stages(image_h, icer_packets_16[it].decomp_level) * image_w;
+        } else if (icer_packets_16[it].subband_type == ICER_SUBBAND_HH) {
+            ll_w = icer_get_dim_n_high_stages(image_w, icer_packets_16[it].decomp_level);
+            ll_h = icer_get_dim_n_high_stages(image_h, icer_packets_16[it].decomp_level);
+            data_start = image + icer_get_dim_n_low_stages(image_h, icer_packets_16[it].decomp_level) * image_w +
+                         icer_get_dim_n_low_stages(image_w, icer_packets_16[it].decomp_level);
         }
 
         icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
-        res = icer_compress_partition_uint16(data_start, &partition_params, image_w, &(icer_packets[it]), output_data);
+        res = icer_compress_partition_uint16(data_start, &partition_params, image_w, &(icer_packets_16[it]), output_data);
         if (res != ICER_RESULT_OK) {
             return res;
         }
@@ -382,7 +383,7 @@ int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image
     for (int i = 0;i <= ICER_MAX_DECOMP_STAGES;i++) {
         for (int j = 0;j <= ICER_SUBBAND_MAX;j++) {
             for (int k = 0;k <= ICER_MAX_SEGMENTS;k++) {
-                for (int lsb = 0;lsb < 15;lsb++) {
+                for (int lsb = 0;lsb < ICER_BITPLANES_TO_COMPRESS_16;lsb++) {
                     icer_reconstruct_data_16[i][j][k][lsb] = NULL;
                 }
             }

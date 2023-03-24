@@ -60,7 +60,7 @@ int main() {
     const size_t out_h = 512;
     const int stages = 4;
     const enum icer_filter_types filt = ICER_FILTER_A;
-    const int segments = 1;
+    const int segments = 10;
 
     int src_w, src_h, n;
     uint8_t *data;
@@ -115,7 +115,7 @@ int main() {
         transform[i] = resized[i];
     }
 
-    const int datastream_size = 30000;
+    const int datastream_size = 70000;
     uint8_t *datastream = malloc(datastream_size+100);
     icer_output_data_buf_typedef output;
     icer_init_output_struct(&output, datastream, datastream_size);
