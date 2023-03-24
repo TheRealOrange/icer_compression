@@ -13,6 +13,7 @@ Below are sample images of the compression algorithm producing output images of 
 | original image (512x512, 262 kilobyte)                                                                      | 70 kilobyte quota                      |
 | ![50kb_quota](https://github.com/TheRealOrange/icer_compression/blob/master/assets/50kb_quota.bmp?raw=true) | ![30kb_quota](https://github.com/TheRealOrange/icer_compression/blob/master/assets/30kb_quota.bmp?raw=true) |
 | 50 kilobyte quota                                                                                           | 30 kilobyte quota                      |
+
 The compression effectiveness depends greatly on the number of error containment segments chosen.
 
 This library uses snippets and sections of code written by others, I will credit them accordingly here.
