@@ -52,7 +52,13 @@ There are a few key design considerations which were taking into account when wr
 
 ## How do I use it?
 
-The project is designed as a C-library and as such is intended to be used as a part of a larger program, not as a standalone program. The main functions which are important for the usage of the library are:
+The project is designed as a C-library and as such is intended to be used as a part of a larger program, not as a standalone program. First, one must call 
+
+```c
+int icer_init();
+```
+
+in order to initialise the constants and look up tables used in encode and decode functions. The main functions which are important for the usage of the library are:
 
 ```c
 int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt, uint8_t segments, icer_output_data_buf_typedef *output_data);
