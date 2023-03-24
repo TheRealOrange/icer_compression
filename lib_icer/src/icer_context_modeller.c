@@ -325,7 +325,7 @@ int icer_compress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane_h
     size_t hor_bound = plane_w - 1;
 
     uint8_t prev_plane = lsb+1;
-    if (prev_plane >= 8) return ICER_BITPLANE_OUT_OF_RANGE;
+    if (prev_plane >= 16) return ICER_BITPLANE_OUT_OF_RANGE;
 
     for (size_t row = 0; row < plane_h; row++) {
         pos = rowstart;
@@ -420,7 +420,7 @@ int icer_compress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane_h
 
                     sign_context = icer_sign_context_table[sh][sv];
                     pred_sign = icer_sign_prediction_table[sh][sv];
-                    actual_sign = ((*pos) & 0x80) != 0;
+                    actual_sign = ((*pos) & 0x8000) != 0;
 
                     agreement_bit = (pred_sign ^ actual_sign) & 1;
 
@@ -472,7 +472,7 @@ int icer_decompress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane
     size_t hor_bound = plane_w - 1;
 
     uint8_t prev_plane = lsb+1;
-    if (prev_plane >= 8) return ICER_BITPLANE_OUT_OF_RANGE;
+    if (prev_plane >= 16) return ICER_BITPLANE_OUT_OF_RANGE;
 
     for (size_t row = 0; row < plane_h; row++) {
         pos = rowstart;
@@ -572,7 +572,7 @@ int icer_decompress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane
                     res = icer_decode_bit(decoder_context, &agreement_bit, context_model->zero_count[sign_context], context_model->total_count[sign_context]);
                     if (res != ICER_RESULT_OK) return res;
                     actual_sign = (agreement_bit ^ pred_sign) & 1;
-                    (*pos) |= actual_sign << 7;
+                    (*pos) |= actual_sign << 15;
 
                     context_model->total_count[sign_context]++;
                     context_model->zero_count[sign_context] += (uint32_t)(agreement_bit == 0);

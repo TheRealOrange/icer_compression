@@ -264,7 +264,8 @@ typedef struct {
     size_t bin_decode_index[ICER_ENCODER_BIN_MAX+1];
 } icer_decoder_context_typedef;
 
-extern icer_image_segment_typedef *icer_reconstruct_data[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
+extern icer_image_segment_typedef *icer_reconstruct_data_8[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
+extern icer_image_segment_typedef *icer_reconstruct_data_16[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
 
 int icer_init();
 void icer_init_decodescheme();
@@ -340,7 +341,7 @@ int icer_compress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane_h
                                  icer_packet_context *pkt_context);
 
 int icer_decompress_partition_uint16(uint16_t *data, partition_param_typdef *params, size_t rowstride,
-                                    icer_image_segment_typedef *seg[][7]);
+                                    icer_image_segment_typedef *seg[][15]);
 int icer_decompress_bitplane_uint16(uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                    icer_context_model_typedef *context_model,
                                    icer_decoder_context_typedef *decoder_context,

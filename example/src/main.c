@@ -60,14 +60,16 @@ int main() {
     const size_t out_h = 512;
     const int stages = 4;
     const enum icer_filter_types filt = ICER_FILTER_A;
-    const int segments = 12;
+    const int segments = 1;
 
     int src_w, src_h, n;
     uint8_t *data;
 
     uint8_t *resized = malloc(out_w*out_h);
-    uint8_t *compress = malloc(out_w*out_h);
-    uint8_t *decompress = malloc(out_w*out_h);
+    uint16_t *transform = malloc(out_w*out_h*2);
+    uint16_t *compress = malloc(out_w*out_h*2);
+    uint16_t *decompress = malloc(out_w*out_h*2);
+    uint8_t *display = malloc(out_w*out_h);
 
     int res = 0;
     clock_t begin, end;
@@ -100,9 +102,6 @@ int main() {
         printf("save failed\nexiting...\n");
         return 0;
     }
-    int bit_red = 2;
-    reduce_bit_depth(resized, out_w*out_h, bit_red);
-    increase_bit_depth(resized, out_w*out_h, bit_red);
 
     printf("saving bit-depth reduced image to: \"%s\"\n", resized_6bpp_filename);
     res = stbi_write_bmp(resized_6bpp_filename, out_w, out_h, 1, resized);
@@ -111,16 +110,17 @@ int main() {
         return 0;
     }
 
-    memcpy(compress, resized, out_h*out_w);
+    for (size_t i = 0;i < out_h*out_w;i++) {
+        compress[i] = resized[i];
+        transform[i] = resized[i];
+    }
 
-    reduce_bit_depth(compress, out_w*out_h, bit_red);
-
-    const int datastream_size = 70000;
+    const int datastream_size = 30000;
     uint8_t *datastream = malloc(datastream_size+100);
     icer_output_data_buf_typedef output;
     icer_init_output_struct(&output, datastream, datastream_size);
     begin = clock();
-    icer_compress_image_uint8(compress, out_w, out_h, stages, filt, segments, &output);
+    icer_compress_image_uint16(compress, out_w, out_h, stages, filt, segments, &output);
     end = clock();
 
     printf("compressed size %llu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
@@ -154,7 +154,7 @@ int main() {
 
     size_t decomp_w, decomp_h;
     begin = clock();
-    res = icer_decompress_image_uint8(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length, stages, filt, segments);
+    res = icer_decompress_image_uint16(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length, stages, filt, segments);
     if (res != ICER_RESULT_OK) {
         printf("error: %d\n", res);
         return 0;
@@ -162,27 +162,34 @@ int main() {
     end = clock();
     printf("decompress time taken: %lf\n", (float)(end-begin)/CLOCKS_PER_SEC);
 
+    for (size_t i = 0;i < out_w*out_h;i++) {
+        display[i] = icer_min_int(0xff, decompress[i]);
+    }
+
     printf("saving decompressed image to: \"%s\"\n", wavelet_inv_filename);
-    increase_bit_depth(decompress, out_w*out_h, bit_red);
-    res = stbi_write_bmp(wavelet_inv_filename, out_w, out_h, 1, decompress);
+    res = stbi_write_bmp(wavelet_inv_filename, out_w, out_h, 1, display);
     if (res == 0) {
         printf("save failed\nexiting...\n");
         return 0;
     }
 
-    if (compare(decompress, resized, out_w*out_h)) {
+    if (compare(display, resized, out_w*out_h)) {
         printf("result is identical\n");
     } else {
         printf("result is different\n");
     }
 
-    reduce_bit_depth(resized, out_w*out_h, bit_red);
-    icer_wavelet_transform_stages_uint8(resized, out_w, out_h, stages, filt);
+    icer_wavelet_transform_stages_uint16(transform, out_w, out_h, stages, filt);
+
     printf("saving transformed image to: \"%s\"\n", wavelet_filename);
-    res = stbi_write_bmp(wavelet_filename, out_w, out_h, 1, resized);
+    for (size_t i = 0;i < out_w*out_h;i++) {
+        display[i] = icer_min_int(0xff, transform[i]);
+    }
+
+    res = stbi_write_bmp(wavelet_filename, out_w, out_h, 1, display);
     if (res == 0) {
-      printf("save failed\nexiting...\n");
-      return 0;
+        printf("save failed\nexiting...\n");
+        return 0;
     }
 
     free(resized);

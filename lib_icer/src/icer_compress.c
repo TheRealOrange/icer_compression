@@ -6,7 +6,12 @@
 #include <string.h>
 
 icer_packet_context icer_packets[ICER_MAX_PACKETS];
-icer_image_segment_typedef *icer_reconstruct_data[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
+#ifdef USE_UINT8_FUNCTIONS
+icer_image_segment_typedef *icer_reconstruct_data_8[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
+#endif
+#ifdef USE_UINT16_FUNCTIONS
+icer_image_segment_typedef *icer_reconstruct_data_16[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
+#endif
 
 static inline int comp_packet(const void *a, const void *b) {
     if (((icer_packet_context *)a)->priority == ((icer_packet_context *)b)->priority) {
@@ -146,7 +151,7 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
         for (int j = 0;j <= ICER_SUBBAND_MAX;j++) {
             for (int k = 0;k <= ICER_MAX_SEGMENTS;k++) {
                 for (int lsb = 0;lsb < 7;lsb++) {
-                    icer_reconstruct_data[i][j][k][lsb] = NULL;
+                    icer_reconstruct_data_8[i][j][k][lsb] = NULL;
                 }
             }
         }
@@ -161,7 +166,7 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
         seg_start = datastream + offset;
         res = icer_find_packet_in_bytestream(&seg, seg_start, data_length - offset);
         if (seg != NULL) {
-            icer_reconstruct_data[seg->decomp_level][seg->subband_type][seg->segment_number][seg->lsb] = seg;
+            icer_reconstruct_data_8[seg->decomp_level][seg->subband_type][seg->segment_number][seg->lsb] = seg;
             *image_w = seg->image_w;
             *image_h = seg->image_h;
             ll_mean = seg->ll_mean_val;
@@ -190,7 +195,7 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
             res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
             if (res != ICER_RESULT_OK) return res;
             res = icer_decompress_partition_uint8(data_start, &partition_params, im_w,
-                                            icer_reconstruct_data[curr_stage][ICER_SUBBAND_LL]);
+                                                  icer_reconstruct_data_8[curr_stage][ICER_SUBBAND_LL]);
             if (res != ICER_RESULT_OK) return res;
         }
 
@@ -202,7 +207,7 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
         res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         if (res != ICER_RESULT_OK) return res;
         res = icer_decompress_partition_uint8(data_start, &partition_params, im_w,
-                                        icer_reconstruct_data[curr_stage][ICER_SUBBAND_HL]);
+                                              icer_reconstruct_data_8[curr_stage][ICER_SUBBAND_HL]);
         if (res != ICER_RESULT_OK) return res;
 
         /* LH subband */
@@ -213,7 +218,7 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
         res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         if (res != ICER_RESULT_OK) return res;
         res = icer_decompress_partition_uint8(data_start, &partition_params, im_w,
-                                        icer_reconstruct_data[curr_stage][ICER_SUBBAND_LH]);
+                                              icer_reconstruct_data_8[curr_stage][ICER_SUBBAND_LH]);
         if (res != ICER_RESULT_OK) return res;
 
         /* HH subband */
@@ -224,7 +229,7 @@ int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h
         res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         if (res != ICER_RESULT_OK) return res;
         res = icer_decompress_partition_uint8(data_start, &partition_params, im_w,
-                                        icer_reconstruct_data[curr_stage][ICER_SUBBAND_HH]);
+                                              icer_reconstruct_data_8[curr_stage][ICER_SUBBAND_HH]);
         if (res != ICER_RESULT_OK) return res;
     }
     printf("decomp stage done\n");
@@ -268,7 +273,7 @@ int icer_compress_image_uint16(uint16_t *image, size_t image_w, size_t image_h, 
     }
 
     uint16_t ll_mean = sum / (ll_w * ll_h);
-    if (ll_mean > INT8_MAX) {
+    if (ll_mean > INT16_MAX) {
         return ICER_INTEGER_OVERFLOW;
     }
 
@@ -287,7 +292,7 @@ int icer_compress_image_uint16(uint16_t *image, size_t image_w, size_t image_h, 
     uint32_t ind = 0;
     for (uint8_t curr_stage = 1;curr_stage <= stages;curr_stage++) {
         priority = icer_pow_uint(2, curr_stage);
-        for (uint8_t lsb = 0;lsb < 7;lsb++) {
+        for (uint8_t lsb = 0;lsb < 15;lsb++) {
             icer_packets[ind].subband_type = ICER_SUBBAND_HL;
             icer_packets[ind].decomp_level = curr_stage;
             icer_packets[ind].ll_mean_val = ll_mean;
@@ -318,7 +323,7 @@ int icer_compress_image_uint16(uint16_t *image, size_t image_w, size_t image_h, 
     }
 
     priority = icer_pow_uint(2, stages);
-    for (uint8_t lsb = 0;lsb < 7;lsb++) {
+    for (uint8_t lsb = 0;lsb < 15;lsb++) {
         icer_packets[ind].subband_type = ICER_SUBBAND_LL;
         icer_packets[ind].decomp_level = stages;
         icer_packets[ind].ll_mean_val = ll_mean;
@@ -377,8 +382,8 @@ int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image
     for (int i = 0;i <= ICER_MAX_DECOMP_STAGES;i++) {
         for (int j = 0;j <= ICER_SUBBAND_MAX;j++) {
             for (int k = 0;k <= ICER_MAX_SEGMENTS;k++) {
-                for (int lsb = 0;lsb < 7;lsb++) {
-                    icer_reconstruct_data[i][j][k][lsb] = NULL;
+                for (int lsb = 0;lsb < 15;lsb++) {
+                    icer_reconstruct_data_16[i][j][k][lsb] = NULL;
                 }
             }
         }
@@ -393,7 +398,7 @@ int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image
         seg_start = datastream + offset;
         res = icer_find_packet_in_bytestream(&seg, seg_start, data_length - offset);
         if (seg != NULL) {
-            icer_reconstruct_data[seg->decomp_level][seg->subband_type][seg->segment_number][seg->lsb] = seg;
+            icer_reconstruct_data_16[seg->decomp_level][seg->subband_type][seg->segment_number][seg->lsb] = seg;
             *image_w = seg->image_w;
             *image_h = seg->image_h;
             ll_mean = seg->ll_mean_val;
@@ -422,7 +427,7 @@ int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image
             res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
             if (res != ICER_RESULT_OK) return res;
             res = icer_decompress_partition_uint16(data_start, &partition_params, im_w,
-                                            icer_reconstruct_data[curr_stage][ICER_SUBBAND_LL]);
+                                                   icer_reconstruct_data_16[curr_stage][ICER_SUBBAND_LL]);
             if (res != ICER_RESULT_OK) return res;
         }
 
@@ -434,7 +439,7 @@ int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image
         res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         if (res != ICER_RESULT_OK) return res;
         res = icer_decompress_partition_uint16(data_start, &partition_params, im_w,
-                                        icer_reconstruct_data[curr_stage][ICER_SUBBAND_HL]);
+                                               icer_reconstruct_data_16[curr_stage][ICER_SUBBAND_HL]);
         if (res != ICER_RESULT_OK) return res;
 
         /* LH subband */
@@ -445,7 +450,7 @@ int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image
         res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         if (res != ICER_RESULT_OK) return res;
         res = icer_decompress_partition_uint16(data_start, &partition_params, im_w,
-                                        icer_reconstruct_data[curr_stage][ICER_SUBBAND_LH]);
+                                               icer_reconstruct_data_16[curr_stage][ICER_SUBBAND_LH]);
         if (res != ICER_RESULT_OK) return res;
 
         /* HH subband */
@@ -456,12 +461,12 @@ int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image
         res = icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         if (res != ICER_RESULT_OK) return res;
         res = icer_decompress_partition_uint16(data_start, &partition_params, im_w,
-                                        icer_reconstruct_data[curr_stage][ICER_SUBBAND_HH]);
+                                               icer_reconstruct_data_16[curr_stage][ICER_SUBBAND_HH]);
         if (res != ICER_RESULT_OK) return res;
     }
     printf("decomp stage done\n");
 
-    icer_from_sign_magnitude_int8(image, im_w * im_h);
+    icer_from_sign_magnitude_int16(image, im_w * im_h);
 
     ll_w = icer_get_dim_n_low_stages(im_w, stages);
     ll_h = icer_get_dim_n_low_stages(im_h, stages);
