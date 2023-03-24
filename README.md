@@ -9,10 +9,10 @@ This library was designed with memory-constrained embedded systems in mind, henc
 Below are sample images of the compression algorithm producing output images of varying quality depending on the space allocated for it.
 
 | ![original](https://github.com/TheRealOrange/icer_compression/blob/master/assets/original.bmp?raw=true)     | ![70kb_quota](https://github.com/TheRealOrange/icer_compression/blob/master/assets/70kb_quota.bmp?raw=true) |
-| -------------------------------------- | -------------------------------------- |
-| original image                         | 70 kilobyte quota                      |
+|-------------------------------------------------------------------------------------------------------------| -------------------------------------- |
+| original image (512x512, 262 kilobyte)                                                                      | 70 kilobyte quota                      |
 | ![50kb_quota](https://github.com/TheRealOrange/icer_compression/blob/master/assets/50kb_quota.bmp?raw=true) | ![30kb_quota](https://github.com/TheRealOrange/icer_compression/blob/master/assets/30kb_quota.bmp?raw=true) |
-| 50 kilobyte quota                      | 30 kilobyte quota                      |
+| 50 kilobyte quota                                                                                           | 30 kilobyte quota                      |
 
 
 
