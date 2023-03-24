@@ -11,7 +11,7 @@
 
 #include "icer.h"
 
-const char filename[] = "../boat.512.bmp";
+const char filename[] = "./boat.512.bmp";
 const char resized_filename[] = "./pic_resized.bmp";
 const char resized_6bpp_filename[] = "./pic_resized_6bpp.bmp";
 const char wavelet_filename[] = "./wavelet_img.bmp";
