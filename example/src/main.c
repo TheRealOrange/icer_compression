@@ -60,7 +60,7 @@ int main() {
     const size_t out_h = 512;
     const int stages = 4;
     const enum icer_filter_types filt = ICER_FILTER_A;
-    const int segments = 10;
+    const int segments = 6;
 
     int src_w, src_h, n;
     uint8_t *data;
@@ -115,10 +115,10 @@ int main() {
         transform[i] = resized[i];
     }
 
-    const int datastream_size = 70000;
-    uint8_t *datastream = malloc(datastream_size+100);
+    const int datastream_size = 30000;
+    uint8_t *datastream = malloc(datastream_size*2+500);
     icer_output_data_buf_typedef output;
-    icer_init_output_struct(&output, datastream, datastream_size);
+    icer_init_output_struct(&output, datastream, datastream_size*2, datastream_size);
     begin = clock();
     icer_compress_image_uint16(compress, out_w, out_h, stages, filt, segments, &output);
     end = clock();
@@ -128,7 +128,7 @@ int main() {
     FILE *ptr1;
 
     ptr1 = fopen("../compressed.bin","wb");
-    size_t written = fwrite(output.data_start, sizeof(output.data_start[0]), output.size_used, ptr1);
+    size_t written = fwrite(output.rearrange_start, sizeof(output.rearrange_start[0]), output.size_used, ptr1);
     printf("written: %llu\n", written);
     fflush(ptr1);
     fclose(ptr1);

@@ -187,12 +187,6 @@ int icer_flush_encode(icer_encoder_context_typedef *encoder_context) {
 
 /* circular buffer helper functions */
 
-void icer_init_output_struct(icer_output_data_buf_typedef *out, uint8_t *data, size_t len) {
-    out->size_used = 0;
-    out->data_start = data;
-    out->size_allocated = len;
-}
-
 static inline uint16_t pop_buf(icer_encoder_context_typedef *cntxt) {
     if (cntxt->used > 0) cntxt->used--;
     uint16_t res = cntxt->encode_buffer[cntxt->head];

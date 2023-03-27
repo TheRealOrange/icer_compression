@@ -4,12 +4,17 @@
 
 #include "icer.h"
 
+#ifdef USE_UINT8_FUNCTIONS
 static inline uint8_t get_bit_category_uint8(const uint8_t* data, uint8_t lsb);
-static inline uint8_t get_bit_category_uint16(const uint16_t* data, uint8_t lsb);
 static inline bool get_bit_significance_uint8(const uint8_t* data, uint8_t lsb);
-static inline bool get_bit_significance_uint16(const uint16_t* data, uint8_t lsb);
 static inline int8_t get_sign_uint8(const uint8_t* data, uint8_t lsb);
+#endif
+
+#ifdef USE_UINT16_FUNCTIONS
+static inline uint8_t get_bit_category_uint16(const uint16_t* data, uint8_t lsb);
+static inline bool get_bit_significance_uint16(const uint16_t* data, uint8_t lsb);
 static inline int8_t get_sign_uint16(const uint16_t* data, uint8_t lsb);
+#endif
 
 #ifdef USE_UINT8_FUNCTIONS
 int icer_compress_bitplane_uint8(const uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,

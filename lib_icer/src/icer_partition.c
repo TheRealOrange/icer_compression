@@ -55,7 +55,7 @@ int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll
 
 #ifdef USE_UINT8_FUNCTIONS
 int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
-                                  icer_output_data_buf_typedef * const output_data) {
+                                  icer_output_data_buf_typedef * const output_data,icer_image_segment_typedef *segments_encoded[]) {
     int res;
     size_t segment_w, segment_h;
     const uint8_t *segment_start;
@@ -108,6 +108,8 @@ int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *p
             seg->crc32 = icer_calculate_packet_crc32(seg);
             output_data->size_used += data_in_bytes;
 
+            segments_encoded[segment_num] = seg;
+
             segment_num++;
         }
         partition_row_ind += segment_h;
@@ -151,6 +153,8 @@ int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *p
             seg->data_crc32 = icer_calculate_segment_crc32(seg);
             seg->crc32 = icer_calculate_packet_crc32(seg);
             output_data->size_used += data_in_bytes;
+
+            segments_encoded[segment_num] = seg;
 
             segment_num++;
         }
@@ -265,8 +269,9 @@ int icer_decompress_partition_uint8(uint8_t * const data, const partition_param_
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
-int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride, const icer_packet_context *pkt_context,
-                                   icer_output_data_buf_typedef *output_data) {
+int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride,
+                                   const icer_packet_context *pkt_context, icer_output_data_buf_typedef *output_data,
+                                   icer_image_segment_typedef *segments_encoded[]) {
     int res;
     size_t segment_w, segment_h;
     const uint16_t *segment_start;
@@ -319,6 +324,8 @@ int icer_compress_partition_uint16(const uint16_t *data, const partition_param_t
             seg->crc32 = icer_calculate_packet_crc32(seg);
             output_data->size_used += data_in_bytes;
 
+            segments_encoded[segment_num] = seg;
+
             segment_num++;
         }
         partition_row_ind += segment_h;
@@ -362,6 +369,8 @@ int icer_compress_partition_uint16(const uint16_t *data, const partition_param_t
             seg->data_crc32 = icer_calculate_segment_crc32(seg);
             seg->crc32 = icer_calculate_packet_crc32(seg);
             output_data->size_used += data_in_bytes;
+
+            segments_encoded[segment_num] = seg;
 
             segment_num++;
         }

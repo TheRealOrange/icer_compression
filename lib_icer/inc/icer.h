@@ -39,14 +39,14 @@ uint32_t __inline __clz( uint32_t value ) {
 enum icer_status {
     ICER_RESULT_OK = 0,
     ICER_INTEGER_OVERFLOW = -1,
-    ICER_SIZE_ERROR = -2,
+    ICER_OUTPUT_BUF_TOO_SMALL = -2,
     ICER_TOO_MANY_SEGMENTS = -3,
     ICER_TOO_MANY_STAGES = -4,
     ICER_BYTE_QUOTA_EXCEEDED = -5,
     ICER_BITPLANE_OUT_OF_RANGE = -6,
     ICER_DECODER_OUT_OF_DATA = -7,
     ICER_DECODED_INVALID_DATA = -8,
-    ICER_PACKET_COUNT_EXCEEDED = -9
+    ICER_PACKET_COUNT_EXCEEDED = -9,
 };
 
 enum icer_filter_types {
@@ -215,8 +215,13 @@ typedef struct {
     size_t image_h;
 } icer_packet_context;
 
+#ifdef USE_UINT8_FUNCTIONS
 extern icer_packet_context icer_packets[ICER_MAX_PACKETS];
+#endif
+
+#ifdef USE_UINT16_FUNCTIONS
 extern icer_packet_context icer_packets_16[ICER_MAX_PACKETS_16];
+#endif
 
 #define ICER_PACKET_PREAMBLE 0x605B
 
@@ -238,6 +243,7 @@ typedef struct {
     size_t size_used;
     size_t size_allocated;
     uint8_t *data_start;
+    uint8_t *rearrange_start;
 } icer_output_data_buf_typedef;
 
 typedef struct {
@@ -268,14 +274,21 @@ typedef struct {
     size_t bin_decode_index[ICER_ENCODER_BIN_MAX+1];
 } icer_decoder_context_typedef;
 
+#ifdef USE_UINT8_FUNCTIONS
 extern icer_image_segment_typedef *icer_reconstruct_data_8[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
-extern icer_image_segment_typedef *icer_reconstruct_data_16[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
+extern icer_image_segment_typedef *icer_rearrange_segments_8[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][7][ICER_MAX_SEGMENTS + 1];
+#endif
 
-int icer_init();
-void icer_init_decodescheme();
-void icer_init_codingscheme();
-void icer_init_flushbits();
-void icer_init_golombcoder();
+#ifdef USE_UINT16_FUNCTIONS
+extern icer_image_segment_typedef *icer_reconstruct_data_16[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
+extern icer_image_segment_typedef *icer_rearrange_segments_16[ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][15][ICER_MAX_SEGMENTS + 1];
+#endif
+
+int icer_init(void);
+void icer_init_decodescheme(void);
+void icer_init_codingscheme(void);
+void icer_init_flushbits(void);
+void icer_init_golombcoder(void);
 
 #ifdef USE_UINT8_FUNCTIONS
 int icer_compress_image_uint8(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt,
@@ -298,8 +311,9 @@ void icer_reverse_uint8(uint8_t *data, size_t start, size_t end, size_t stride);
 void icer_interleave_uint8(uint8_t *data, size_t len, size_t stride);
 void icer_deinterleave_uint8(uint8_t *data, size_t len, size_t stride);
 
-int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
-                                  icer_output_data_buf_typedef *const output_data);
+int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *params, size_t rowstride,
+                                  icer_packet_context *pkt_context, icer_output_data_buf_typedef *output_data,
+                                  icer_image_segment_typedef *segments_encoded[]);
 int icer_compress_bitplane_uint8(const uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                  icer_context_model_typedef *context_model,
                                  icer_encoder_context_typedef *encoder_context,
@@ -337,8 +351,9 @@ void icer_reverse_uint16(uint16_t *data, size_t start, size_t end, size_t stride
 void icer_interleave_uint16(uint16_t *data, size_t len, size_t stride);
 void icer_deinterleave_uint16(uint16_t *data, size_t len, size_t stride);
 
-int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride, const icer_packet_context *pkt_context,
-                                   icer_output_data_buf_typedef *output_data);
+int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride,
+                                   const icer_packet_context *pkt_context, icer_output_data_buf_typedef *output_data,
+                                   icer_image_segment_typedef *segments_encoded[]);
 int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                   icer_context_model_typedef *context_model,
                                   icer_encoder_context_typedef *encoder_context,
@@ -380,7 +395,7 @@ uint32_t icer_calculate_packet_crc32(icer_image_segment_typedef *pkt);
 uint32_t icer_calculate_segment_crc32(icer_image_segment_typedef *pkt);
 int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data_buf_typedef *output_data, uint8_t segment_num, const icer_packet_context *context);
 
-void icer_init_output_struct(icer_output_data_buf_typedef *out, uint8_t *data, size_t len);
+int icer_init_output_struct(icer_output_data_buf_typedef *out, uint8_t *data, size_t buf_len, size_t byte_quota);
 int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt);
 
 static inline unsigned icer_pow_uint(unsigned base, unsigned exp);
