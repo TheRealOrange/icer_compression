@@ -15,7 +15,7 @@ include_directories(example/inc)
 include_directories(lib_icer/inc)
 add_subdirectory(lib_icer)
 
-add_executable(icer_compression example/src/main.c example/inc/stb_image_write.h example/inc/stb_image.h example/src/stb_lib.c example/inc/stb_image_resize.h)
+add_executable(icer_test example/src/main.c example/inc/stb_image_write.h example/inc/stb_image.h example/src/stb_lib.c example/inc/stb_image_resize.h)
 
-target_link_libraries(icer_compression PRIVATE m)
-target_link_libraries(icer_compression PUBLIC icer)
+target_link_libraries(icer_test PRIVATE m)
+target_link_libraries(icer_test PUBLIC icer)
