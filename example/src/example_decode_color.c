@@ -99,28 +99,6 @@ int main() {
         return 0;
     }
 
-    uint8_t *display1 = malloc(decomp_w * decomp_h);
-    for (size_t i = 0;i < decomp_w * decomp_h;i++) display1[i] = decompress[0][i];
-    res = stbi_write_bmp("../reey.bmp", decomp_w, decomp_h, 1, display1);
-    if (res == 0) {
-        printf("save failed\nexiting...\n");
-        return 0;
-    }
-
-    for (size_t i = 0;i < decomp_w * decomp_h;i++) display1[i] = decompress[1][i];
-    res = stbi_write_bmp("../reeu.bmp", decomp_w, decomp_h, 1, display1);
-    if (res == 0) {
-        printf("save failed\nexiting...\n");
-        return 0;
-    }
-
-    for (size_t i = 0;i < decomp_w * decomp_h;i++) display1[i] = decompress[2][i];
-    res = stbi_write_bmp("../reev.bmp", decomp_w, decomp_h, 1, display1);
-    if (res == 0) {
-        printf("save failed\nexiting...\n");
-        return 0;
-    }
-
     for (int chan = 0;chan <= 2;chan++) free(decompress[chan]);
     free(display);
     free(buf);
