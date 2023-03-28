@@ -33,6 +33,40 @@ uint32_t __inline __clz( uint32_t value ) {
 #define ICER_BITPLANES_TO_COMPRESS_8 7
 #define ICER_BITPLANES_TO_COMPRESS_16 9
 
+//#define USER_PROVIDED_BUFFERS
+/*
+ * if the user decides to specify explicitly where to place the buffers used during encoding and
+ * decoding, the user should define the above line and allocate memory for the buffers listed below
+ *
+ * for encoding uint8
+ * icer_packet_context icer_packets[ICER_MAX_PACKETS];
+ * icer_image_segment_typedef *icer_rearrange_segments_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][7][ICER_MAX_SEGMENTS + 1];
+ *
+ * for decoding uint8
+ * icer_image_segment_typedef *icer_reconstruct_data_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
+ *
+ * for encoding uint16
+ * icer_packet_context icer_packets_16[ICER_MAX_PACKETS_16];
+ * icer_image_segment_typedef *icer_rearrange_segments_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][15][ICER_MAX_SEGMENTS + 1];
+ *
+ * for decoding uint16
+ * icer_image_segment_typedef *icer_reconstruct_data_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
+ *
+ * common to all encoding
+ * uint16_t icer_encode_circ_buf[ICER_CIRC_BUF_SIZE];
+ */
+
+//#define CRC32BUF_FUNCTION(x, y) xxx
+/*
+ *
+ * if the user decides to use a custom provided crc32 implementation (perhaps in hardware) the
+ * user should define the above line with the function as specified below
+ *
+ * uint32_t crc32buf(char *buf, size_t len)
+ *
+ * override function with a custom defined function
+ */
+
 #if !defined(USE_UINT8_FUNCTIONS) && !defined(USE_UINT16_FUNCTIONS)
 #define USE_UINT8_FUNCTIONS
 #define USE_UINT16_FUNCTIONS

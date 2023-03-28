@@ -3,8 +3,13 @@
 //
 #include "icer.h"
 
+#ifdef USE_ENCODE_FUNCTIONS
 icer_custom_code_typedef icer_custom_coding_scheme[ICER_ENCODER_BIN_MAX + 1][CUSTOM_CODING_MAX_LOOKUP];
+#endif
+
+#ifdef USE_DECODE_FUNCTIONS
 icer_custom_code_typedef icer_custom_decode_scheme[ICER_ENCODER_BIN_MAX + 1][CUSTOM_CODING_MAX_LOOKUP];
+#endif
 
 icer_custom_flush_typedef icer_custom_code_flush_bits[ICER_ENCODER_BIN_MAX + 1][CUSTOM_CODE_FLUSH_MAX_LOOKUP + 1][MAX_NUM_BITS_BEFORE_FLUSH + 1];
 

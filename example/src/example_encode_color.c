@@ -14,7 +14,7 @@
 #include "color_util.h"
 
 const char compressed_filename[] = "../compressed.bin";
-const char filename[] = "../IMG_1920.jpg";
+const char filename[] = "../house.bmp";
 
 void rgb888_packed_to_yuv(uint16_t *y_channel, uint16_t *u_channel, uint16_t *v_channel, uint8_t *img, size_t image_w, size_t image_h, size_t rowstride) {
     int32_t r, g, b;

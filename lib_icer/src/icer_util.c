@@ -3,7 +3,13 @@
 //
 
 #include "icer.h"
+
+#ifndef CRC32BUF_FUNCTION
 #include "crc.h"
+#define CRC32BUF_FUNCTION(x, y) crc32buf(x, y)
+#endif
+
+#ifndef USER_PROVIDED_BUFFERS
 
 #ifdef USE_UINT8_FUNCTIONS
 #ifdef USE_ENCODE_FUNCTIONS
@@ -25,6 +31,8 @@ icer_image_segment_typedef *icer_rearrange_segments_16[ICER_CHANNEL_MAX + 1][ICE
 #ifdef USE_DECODE_FUNCTIONS
 icer_image_segment_typedef *icer_reconstruct_data_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
 #endif
+#endif
+
 #endif
 
 int icer_init_output_struct(icer_output_data_buf_typedef *out, uint8_t *data, size_t buf_len, size_t byte_quota) {

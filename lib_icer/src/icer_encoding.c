@@ -5,7 +5,9 @@
 #include "icer.h"
 
 #ifdef USE_ENCODE_FUNCTIONS
+#ifndef USER_PROVIDED_BUFFERS
 uint16_t icer_encode_circ_buf[ICER_CIRC_BUF_SIZE];
+#endif
 
 static inline uint16_t pop_buf(icer_encoder_context_typedef *cntxt);
 static inline int16_t alloc_buf(icer_encoder_context_typedef *cntxt);
