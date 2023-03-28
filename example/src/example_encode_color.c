@@ -31,36 +31,11 @@ void rgb888_packed_to_yuv(uint16_t *y_channel, uint16_t *u_channel, uint16_t *v_
             g = pixel[1];
             b = pixel[2];
 
-            *output_y = RGB2Y(r, g, b);
-            *output_u = RGB2U(r, g, b);
-            *output_v = RGB2V(r, g, b);
+            *output_y = CRGB2Y(r, g, b);
+            *output_u = CRGB2Cb(r, g, b);
+            *output_v = CRGB2Cr(r, g, b);
             pixel += 3;
             output_y++; output_u++; output_v++;
-        }
-    }
-}
-
-void yuv_to_rgb888_packed(uint16_t *y_channel, uint16_t *u_channel, uint16_t *v_channel, uint8_t *img, size_t image_w, size_t image_h, size_t rowstride) {
-    int32_t y, u, v;
-    uint8_t *pixel;
-
-    uint16_t *input_y, *input_u, *input_v;
-    for (size_t row = 0;row < image_h;row++) {
-        pixel = img + 3 * rowstride * row;
-        input_y = y_channel + rowstride * row;
-        input_u = u_channel + rowstride * row;
-        input_v = v_channel + rowstride * row;
-        for (size_t col = 0;col < image_w;col++) {
-            y = *input_y;
-            u = *input_u;
-            v = *input_v;
-
-            pixel[0] = YUV2R(y, u, v);
-            pixel[1] = YUV2G(y, u, v);
-            pixel[2] = YUV2B(y, u, v);
-
-            pixel += 3;
-            input_y++; input_u++; input_v++;
         }
     }
 }

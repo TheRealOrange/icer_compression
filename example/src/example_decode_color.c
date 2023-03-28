@@ -31,9 +31,9 @@ void yuv_to_rgb888_packed(uint16_t *y_channel, uint16_t *u_channel, uint16_t *v_
             u = *input_u;
             v = *input_v;
 
-            pixel[0] = YUV2R(y, u, v);
-            pixel[1] = YUV2G(y, u, v);
-            pixel[2] = YUV2B(y, u, v);
+            pixel[0] = CYCbCr2R(y, u, v);
+            pixel[1] = CYCbCr2G(y, u, v);
+            pixel[2] = CYCbCr2B(y, u, v);
 
             pixel += 3;
             input_y++; input_u++; input_v++;
