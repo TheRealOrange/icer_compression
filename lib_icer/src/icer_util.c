@@ -5,6 +5,37 @@
 #include "icer.h"
 #include "crc.h"
 
+#ifdef USE_UINT8_FUNCTIONS
+#ifdef USE_ENCODE_FUNCTIONS
+icer_packet_context icer_packets[ICER_MAX_PACKETS];
+icer_image_segment_typedef *icer_rearrange_segments_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][7][ICER_MAX_SEGMENTS + 1];
+#endif
+
+#ifdef USE_DECODE_FUNCTIONS
+icer_image_segment_typedef *icer_reconstruct_data_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
+#endif
+#endif
+
+#ifdef USE_UINT16_FUNCTIONS
+#ifdef USE_ENCODE_FUNCTIONS
+icer_packet_context icer_packets_16[ICER_MAX_PACKETS_16];
+icer_image_segment_typedef *icer_rearrange_segments_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][15][ICER_MAX_SEGMENTS + 1];
+#endif
+
+#ifdef USE_DECODE_FUNCTIONS
+icer_image_segment_typedef *icer_reconstruct_data_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
+#endif
+#endif
+
+int icer_init_output_struct(icer_output_data_buf_typedef *out, uint8_t *data, size_t buf_len, size_t byte_quota) {
+    if (byte_quota * 2 > buf_len) return ICER_OUTPUT_BUF_TOO_SMALL;
+    out->size_used = 0;
+    out->data_start = data;
+    out->size_allocated = byte_quota;
+    out->rearrange_start = data + byte_quota;
+    return ICER_RESULT_OK;
+}
+
 /* compute which bin of the interleaved entropy coder to place a bit to be encoded based of the probability cutoffs of each bin */
 int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt) {
     uint32_t comp = zero_cnt * ICER_BIN_PROBABILITY_DENOMINATOR;

@@ -4,6 +4,7 @@
 
 #include "icer.h"
 
+#ifdef USE_ENCODE_FUNCTIONS
 uint16_t icer_encode_circ_buf[ICER_CIRC_BUF_SIZE];
 
 static inline uint16_t pop_buf(icer_encoder_context_typedef *cntxt);
@@ -214,7 +215,7 @@ int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data
     (*pkt)->decomp_level = context->decomp_level;
     (*pkt)->subband_type = context->subband_type;
     (*pkt)->segment_number = segment_num;
-    (*pkt)->lsb = context->lsb;
+    (*pkt)->lsb_chan = context->lsb | ICER_SET_CHANNEL_MACRO(context->channel);
     (*pkt)->ll_mean_val = context->ll_mean_val;
     (*pkt)->image_w = context->image_w;
     (*pkt)->image_h = context->image_h;
@@ -229,3 +230,5 @@ int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data
 
     return ICER_RESULT_OK;
 }
+
+#endif

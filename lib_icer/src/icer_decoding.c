@@ -5,6 +5,8 @@
 #include <string.h>
 #include "icer.h"
 
+#ifdef USE_DECODE_FUNCTIONS
+
 #define ICER_BITMASK_MACRO(x) (((unsigned)1 << x) - 1)
 
 void icer_init_entropy_decoder_context(icer_decoder_context_typedef *decoder_context, uint8_t *encoded_words, size_t encoded_bits) {
@@ -190,3 +192,5 @@ int icer_decode_bit(icer_decoder_context_typedef *decoder_context, uint8_t *bit,
 
     return ICER_RESULT_OK;
 }
+
+#endif

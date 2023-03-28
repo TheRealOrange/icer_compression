@@ -23,13 +23,18 @@ icer_custom_decode_scheme[bin][inp].output_code_bits = out_bits;      \
 
 int icer_init() {
     icer_init_golombcoder();
+#ifdef USE_ENCODE_FUNCTIONS
     icer_init_codingscheme();
+#endif
+#ifdef USE_DECODE_FUNCTIONS
     icer_init_decodescheme();
+#endif
     icer_init_flushbits();
 
     return ICER_RESULT_OK;
 }
 
+#ifdef USE_DECODE_FUNCTIONS
 void icer_init_decodescheme() {
     for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
         for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) {
@@ -113,7 +118,9 @@ void icer_init_decodescheme() {
         }
     }
 }
+#endif
 
+#ifdef USE_ENCODE_FUNCTIONS
 void icer_init_codingscheme() {
     for (int it = 0; it <= ICER_ENCODER_BIN_MAX; it++) {
         for (int j = 0; j < CUSTOM_CODING_MAX_LOOKUP; j++) icer_custom_coding_scheme[it][j].input_code_bits = 0;
@@ -179,6 +186,7 @@ void icer_init_codingscheme() {
     INIT_CODING_SCHEME(ICER_ENC_BIN_8, 0b01, 2, 0b011, 3);
     INIT_CODING_SCHEME(ICER_ENC_BIN_8, 0b11, 2, 0b11111, 5);
 }
+#endif
 
 void icer_init_flushbits() {
     INIT_FLUSH_BITS(ICER_ENC_BIN_2, 0b1, 1, 0, 1);
