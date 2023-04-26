@@ -53,6 +53,7 @@ int icer_inverse_wavelet_transform_stages_uint8(uint8_t * const image, size_t im
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
+#ifdef USE_ENCODE_FUNCTIONS
 int icer_wavelet_transform_stages_uint16(uint16_t * const image, size_t image_w, size_t image_h, uint8_t stages,
                                         enum icer_filter_types filt) {
     bool overflow = false;
@@ -74,7 +75,9 @@ int icer_wavelet_transform_stages_uint16(uint16_t * const image, size_t image_w,
 
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
+#endif
 
+#ifdef USE_DECODE_FUNCTIONS
 int icer_inverse_wavelet_transform_stages_uint16(uint16_t * const image, size_t image_w, size_t image_h, uint8_t stages,
                                                 enum icer_filter_types filt) {
     bool overflow = false;
@@ -98,6 +101,7 @@ int icer_inverse_wavelet_transform_stages_uint16(uint16_t * const image, size_t 
     }
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
+#endif
 #endif
 
 size_t icer_get_dim_n_low_stages(size_t dim, uint8_t stages) {
@@ -147,6 +151,7 @@ int icer_inverse_wavelet_transform_2d_uint8(uint8_t * const image, size_t image_
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
+#ifdef USE_ENCODE_FUNCTIONS
 int icer_wavelet_transform_2d_uint16(uint16_t * const image, size_t image_w, size_t image_h, size_t rowstride,
                                     enum icer_filter_types filt) {
     bool overflow = false;
@@ -164,7 +169,9 @@ int icer_wavelet_transform_2d_uint16(uint16_t * const image, size_t image_w, siz
 
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
+#endif
 
+#ifdef USE_DECODE_FUNCTIONS
 int icer_inverse_wavelet_transform_2d_uint16(uint16_t * const image, size_t image_w, size_t image_h, size_t rowstride,
                                             enum icer_filter_types filt) {
     bool overflow = false;
@@ -182,6 +189,7 @@ int icer_inverse_wavelet_transform_2d_uint16(uint16_t * const image, size_t imag
 
     return overflow ? ICER_INTEGER_OVERFLOW : ICER_RESULT_OK;
 }
+#endif
 #endif
 
 #ifdef USE_UINT8_FUNCTIONS
