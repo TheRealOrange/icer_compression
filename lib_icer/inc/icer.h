@@ -96,7 +96,8 @@ enum icer_status {
     ICER_DECODER_OUT_OF_DATA = -7,
     ICER_DECODED_INVALID_DATA = -8,
     ICER_PACKET_COUNT_EXCEEDED = -9,
-    ICER_FATAL_ERROR = -10
+    ICER_FATAL_ERROR = -10,
+    ICER_INVALID_INPUT = -11,
 };
 
 enum icer_filter_types {
@@ -366,6 +367,7 @@ int icer_init(void);
 
 #ifdef USE_DECODE_FUNCTIONS
 void icer_init_decodescheme(void);
+int icer_get_image_dimensions(const uint8_t *datastream, size_t data_length, size_t *image_w, size_t *image_h);
 #endif
 
 #ifdef USE_ENCODE_FUNCTIONS
