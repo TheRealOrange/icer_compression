@@ -569,6 +569,18 @@ void icer_interleave_uint8(uint8_t * const data, size_t len, size_t stride) {
     uint8_t swap, num;
 
     bool is_odd = len & 1;
+    // in-shuffle algorithm only works for even length arrays
+    // odd length handled separately
+    if (is_odd) n -= 1;
+
+    // place the element at the end of the first half at the end
+    if (is_odd) {
+        swap = data[(n / 2) * stride];
+        for (size_t i = n / 2; i < n; i++) {
+            data[i * stride] = data[(i + 1) * stride];
+        }
+        data[(len - 1) * stride] = swap;
+    }
 
     while (processed < n) {
         k = icer_find_k(n - processed);
@@ -616,6 +628,11 @@ void icer_deinterleave_uint8(uint8_t * const data, size_t len, size_t stride) {
     size_t j, n1;
     uint8_t swap, num;
 
+    bool is_odd = len & 1;
+    // in-shuffle algorithm only works for even length arrays
+    // odd length handled separately
+    if (is_odd) n -= 1;
+
     while (processed < n) {
         k = icer_find_k(n - processed);
         segment = icer_slice_lengths[k];
@@ -648,6 +665,15 @@ void icer_deinterleave_uint8(uint8_t * const data, size_t len, size_t stride) {
 
         processed += segment;
     }
+
+    // place the last element at the end of the first half if array is odd
+    if (is_odd) {
+        swap = data[(len - 1) * stride];
+        for (size_t i = len - 1; i > n / 2; i--) {
+            data[i * stride] = data[(i - 1) * stride];
+        }
+        data[(n / 2) * stride] = swap;
+    }
 }
 #endif
 
@@ -678,6 +704,18 @@ void icer_interleave_uint16(uint16_t * const data, size_t len, size_t stride) {
     uint16_t swap, num;
 
     bool is_odd = len & 1;
+    // in-shuffle algorithm only works for even length arrays
+    // odd length handled separately
+    if (is_odd) n -= 1;
+
+    // place the element at the end of the first half at the end
+    if (is_odd) {
+        swap = data[(n / 2) * stride];
+        for (size_t i = n / 2; i < n; i++) {
+            data[i * stride] = data[(i + 1) * stride];
+        }
+        data[(len - 1) * stride] = swap;
+    }
 
     while (processed < n) {
         k = icer_find_k(n - processed);
@@ -685,7 +723,7 @@ void icer_interleave_uint16(uint16_t * const data, size_t len, size_t stride) {
         halfseg = segment / 2;
 
         left = n - processed;
-        halfleft = left / 2 - (is_odd ? 0 : 1);
+        halfleft = left / 2 - 1;
 
         if (left > 0) {
             icer_reverse_uint16(data, processed + halfseg, processed + halfleft + halfseg, stride);
@@ -725,6 +763,11 @@ void icer_deinterleave_uint16(uint16_t * const data, size_t len, size_t stride) 
     size_t j, n1;
     uint16_t swap, num;
 
+    bool is_odd = len & 1;
+    // in-shuffle algorithm only works for even length arrays
+    // odd length handled separately
+    if (is_odd) n -= 1;
+
     while (processed < n) {
         k = icer_find_k(n - processed);
         segment = icer_slice_lengths[k];
@@ -756,6 +799,15 @@ void icer_deinterleave_uint16(uint16_t * const data, size_t len, size_t stride) 
         }
 
         processed += segment;
+    }
+
+    // place the last element at the end of the first half if array is odd
+    if (is_odd) {
+        swap = data[(len - 1) * stride];
+        for (size_t i = len - 1; i > n / 2; i--) {
+            data[i * stride] = data[(i - 1) * stride];
+        }
+        data[(n / 2) * stride] = swap;
     }
 }
 #endif
