@@ -129,9 +129,113 @@ which can be used to get the dimensions of an encoded image (useful for knowing 
 
 To run the example code, simply build it and place the `boat.512.bmp`  (and `boatcolor.512.bmp` for color encode) image as the same folder as the executable to generate the output.
 
+## Advanced Configuration
 
+The library provides several compile-time configuration options through preprocessor definitions that allow you to optimize memory usage and customize functionality for your specific needs.
 
-### Note: Work in progress!
+### Memory and Buffer Configuration
+
+```c
+// Maximum number of error containment segments
+#ifndef ICER_MAX_SEGMENTS
+#define ICER_MAX_SEGMENTS 32
+#endif
+
+// Maximum number of wavelet decomposition stages
+#ifndef ICER_MAX_DECOMP_STAGES
+#define ICER_MAX_DECOMP_STAGES 6
+#endif
+
+// Maximum number of packets for 8-bit and 16-bit processing
+#ifndef ICER_MAX_PACKETS
+#define ICER_MAX_PACKETS 300
+#endif
+
+#ifndef ICER_MAX_PACKETS_16
+#define ICER_MAX_PACKETS_16 800
+#endif
+
+// Number of bitplanes to compress for 8-bit and 16-bit modes
+#ifndef ICER_BITPLANES_TO_COMPRESS_8
+#define ICER_BITPLANES_TO_COMPRESS_8 7
+#endif
+
+#ifndef ICER_BITPLANES_TO_COMPRESS_16
+#define ICER_BITPLANES_TO_COMPRESS_16 9
+#endif
+```
+
+### Feature Selection Flags
+
+```c
+// Select which bit depth functions to compile
+#if !defined(USE_UINT8_FUNCTIONS) && !defined(USE_UINT16_FUNCTIONS)
+#define USE_UINT8_FUNCTIONS
+#define USE_UINT16_FUNCTIONS
+#endif
+
+// Select whether to compile encode/decode functions
+#if !defined(USE_DECODE_FUNCTIONS) && !defined(USE_ENCODE_FUNCTIONS)
+#define USE_DECODE_FUNCTIONS
+#define USE_ENCODE_FUNCTIONS
+#endif
+```
+
+### Advanced Memory Management
+
+```c
+// Enable user-provided buffers for fine-grained memory control
+//#define USER_PROVIDED_BUFFERS
+```
+
+When `USER_PROVIDED_BUFFERS` is defined, you must allocate the following buffers:
+
+For 8-bit encoding:
+
+```c
+icer_packet_context icer_packets[ICER_MAX_PACKETS];
+icer_image_segment_typedef *icer_rearrange_segments_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][7][ICER_MAX_SEGMENTS + 1];
+```
+
+For 8-bit decoding:
+
+```c
+icer_image_segment_typedef *icer_reconstruct_data_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
+```
+
+For 16-bit encoding:
+
+```c
+icer_packet_context icer_packets_16[ICER_MAX_PACKETS_16];
+icer_image_segment_typedef *icer_rearrange_segments_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][15][ICER_MAX_SEGMENTS + 1];
+```
+
+For 16-bit decoding:
+
+```c
+icer_image_segment_typedef *icer_reconstruct_data_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
+```
+
+Common encoding buffer:
+
+```c
+uint16_t icer_encode_circ_buf[ICER_CIRC_BUF_SIZE];  // ICER_CIRC_BUF_SIZE = 2048
+```
+
+### Custom CRC32 Implementation
+
+```c
+// Define custom CRC32 implementation (e.g., hardware acceleration)
+//#define CRC32BUF_FUNCTION(x, y) your_custom_crc32_function
+```
+
+When defined, you can provide your own CRC32 implementation with the following signature:
+
+```c
+uint32_t crc32buf(char *buf, size_t len)
+```
+
+## Note: Work in progress!
 
 The library now supports:
 
