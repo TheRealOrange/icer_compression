@@ -13,8 +13,8 @@
 #include "icer.h"
 #include "color_util.h"
 
-const char compressed_filename[] = "../compressed.bin";
-const char filename[] = "../house.bmp";
+const char compressed_filename[] = "./compressed.bin";
+const char filename[] = "./boatcolor.512.bmp";
 
 void rgb888_packed_to_yuv(uint16_t *y_channel, uint16_t *u_channel, uint16_t *v_channel, uint8_t *img, size_t image_w, size_t image_h, size_t rowstride) {
     int32_t r, g, b;
@@ -45,9 +45,9 @@ int main() {
     const size_t out_h = 512;
     const int stages = 4;
     const enum icer_filter_types filt = ICER_FILTER_A;
-    const int segments = 6;
+    const int segments = 10;
 
-    const int datastream_size = 90000;
+    const int datastream_size = 100000;
 
     int src_w, src_h, n;
     uint8_t *data;

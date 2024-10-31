@@ -12,8 +12,8 @@
 
 #include "icer.h"
 
-const char compressed_filename[] = "../compressed.bin";
-const char filename[] = "../decompress.bmp";
+const char compressed_filename[] = "./compressed.bin";
+const char filename[] = "./decompress.bmp";
 
 int main() {
     const size_t out_w = 1000;
