@@ -38,8 +38,12 @@ uint32_t __inline __clz( uint32_t value ) {
 #ifndef ICER_MAX_PACKETS_16
 #define ICER_MAX_PACKETS_16 800
 #endif
+#ifndef ICER_BITPLANES_TO_COMPRESS_8
 #define ICER_BITPLANES_TO_COMPRESS_8 7
+#endif
+#ifndef ICER_BITPLANES_TO_COMPRESS_16
 #define ICER_BITPLANES_TO_COMPRESS_16 9
+#endif
 
 //#define USER_PROVIDED_BUFFERS
 /*
@@ -418,6 +422,7 @@ int icer_decompress_bitplane_uint8(uint8_t *const data, size_t plane_w, size_t p
                                    icer_context_model_typedef *context_model,
                                    icer_decoder_context_typedef *decoder_context,
                                    const icer_packet_context *pkt_context);
+void icer_remove_negative_uint8(uint8_t * const image, size_t image_w, size_t image_h);
 #endif
 
 void icer_reverse_uint8(uint8_t *data, size_t start, size_t end, size_t stride);
@@ -471,6 +476,7 @@ int icer_decompress_bitplane_uint16(uint16_t *const data, size_t plane_w, size_t
                                     icer_context_model_typedef *context_model,
                                     icer_decoder_context_typedef *decoder_context,
                                     const icer_packet_context *pkt_context);
+void icer_remove_negative_uint16(uint16_t * const image, size_t image_w, size_t image_h);
 #endif
 
 void icer_reverse_uint16(uint16_t *data, size_t start, size_t end, size_t stride);

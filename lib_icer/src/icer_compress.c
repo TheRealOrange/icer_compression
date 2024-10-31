@@ -252,7 +252,6 @@ int icer_decompress_image_uint8(uint8_t * const image, size_t * const image_w, s
                                               icer_reconstruct_data_8[chan][curr_stage][ICER_SUBBAND_HH]);
         if (res != ICER_RESULT_OK) return res;
     }
-    printf("decomp stage done\n");
 
     icer_from_sign_magnitude_int8(image, im_w * im_h);
 
@@ -268,6 +267,7 @@ int icer_decompress_image_uint8(uint8_t * const image, size_t * const image_w, s
     }
 
     icer_inverse_wavelet_transform_stages_uint8(image, im_w, im_h, stages, filt);
+    icer_remove_negative_uint8(image, im_w, im_h);
     return ICER_RESULT_OK;
 }
 #endif
@@ -511,7 +511,6 @@ int icer_decompress_image_uint16(uint16_t * const image, size_t * const image_w,
                                                icer_reconstruct_data_16[chan][curr_stage][ICER_SUBBAND_HH]);
         if (res != ICER_RESULT_OK) return res;
     }
-    printf("decomp stage done\n");
 
     icer_from_sign_magnitude_int16(image, im_w * im_h);
 
@@ -527,6 +526,7 @@ int icer_decompress_image_uint16(uint16_t * const image, size_t * const image_w,
     }
 
     icer_inverse_wavelet_transform_stages_uint16(image, im_w, im_h, stages, filt);
+    icer_remove_negative_uint16(image, im_w, im_h);
     return ICER_RESULT_OK;
 }
 #endif

@@ -65,3 +65,28 @@ uint32_t icer_calculate_segment_crc32(icer_image_segment_typedef *pkt) {
     return crc32buf((char*)pkt + sizeof(icer_image_segment_typedef), icer_ceil_div_uint32(pkt->data_length, 8));
 }
 
+#ifdef USE_DECODE_FUNCTIONS
+#ifdef USE_UINT8_FUNCTIONS
+void icer_remove_negative_uint8(uint8_t * const image, size_t image_w, size_t image_h) {
+    size_t data_length = image_w * image_h;
+    int8_t *data_end = (int8_t *)(image + data_length);
+    for (int8_t *pixel = (int8_t *)image;pixel < data_end;pixel++) {
+        if (*pixel < 0) {
+            *pixel = 0;
+        }
+    }
+}
+#endif
+
+#ifdef USE_UINT16_FUNCTIONS
+void icer_remove_negative_uint16(uint16_t * const image, size_t image_w, size_t image_h) {
+    size_t data_length = image_w * image_h;
+    int16_t *data_end = (int16_t *)(image + data_length);
+    for (int16_t *pixel = (int16_t *)image;pixel < data_end;pixel++) {
+        if (*pixel < 0) {
+            *pixel = 0;
+        }
+    }
+}
+#endif
+#endif

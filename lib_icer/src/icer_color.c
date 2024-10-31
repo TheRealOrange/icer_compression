@@ -329,6 +329,10 @@ int icer_decompress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint
     icer_inverse_wavelet_transform_stages_uint8(y_channel, im_w, im_h, stages, filt);
     icer_inverse_wavelet_transform_stages_uint8(u_channel, im_w, im_h, stages, filt);
     icer_inverse_wavelet_transform_stages_uint8(v_channel, im_w, im_h, stages, filt);
+
+    icer_remove_negative_uint8(y_channel, im_w, im_h);
+    icer_remove_negative_uint8(u_channel, im_w, im_h);
+    icer_remove_negative_uint8(v_channel, im_w, im_h);
     return ICER_RESULT_OK;
 }
 #endif
@@ -648,6 +652,10 @@ int icer_decompress_image_yuv_uint16(uint16_t * const y_channel, uint16_t * cons
     icer_inverse_wavelet_transform_stages_uint16(y_channel, im_w, im_h, stages, filt);
     icer_inverse_wavelet_transform_stages_uint16(u_channel, im_w, im_h, stages, filt);
     icer_inverse_wavelet_transform_stages_uint16(v_channel, im_w, im_h, stages, filt);
+
+    icer_remove_negative_uint16(y_channel, im_w, im_h);
+    icer_remove_negative_uint16(u_channel, im_w, im_h);
+    icer_remove_negative_uint16(v_channel, im_w, im_h);
     return ICER_RESULT_OK;
 }
 #endif
