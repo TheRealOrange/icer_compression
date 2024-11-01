@@ -57,7 +57,8 @@ int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll
 
 #ifdef USE_ENCODE_FUNCTIONS
 int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context *pkt_context,
-                                  icer_output_data_buf_typedef * const output_data,icer_image_segment_typedef *segments_encoded[]) {
+                                  icer_image_metadata *metadata, icer_output_data_buf_typedef * const output_data,
+                                  icer_image_segment_typedef *segments_encoded[]) {
     int res;
     size_t segment_w, segment_h;
     const uint8_t *segment_start;
@@ -92,7 +93,7 @@ int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *p
             partition_col_ind += segment_w;
 
             icer_init_context_model_vals(&context_model, pkt_context->subband_type);
-            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context);
+            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context, metadata);
             if (res != ICER_RESULT_OK) return res;
 
             icer_init_entropy_coder_context(&context, icer_encode_circ_buf, ICER_CIRC_BUF_SIZE,
@@ -138,7 +139,7 @@ int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *p
             partition_col_ind += segment_w;
 
             icer_init_context_model_vals(&context_model, pkt_context->subband_type);
-            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context);
+            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context, metadata);
             if (res != ICER_RESULT_OK) return res;
 
             icer_init_entropy_coder_context(&context, icer_encode_circ_buf, ICER_CIRC_BUF_SIZE,
@@ -277,8 +278,8 @@ int icer_decompress_partition_uint8(uint8_t * const data, const partition_param_
 
 #ifdef USE_ENCODE_FUNCTIONS
 int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride,
-                                   const icer_packet_context *pkt_context, icer_output_data_buf_typedef *output_data,
-                                   icer_image_segment_typedef *segments_encoded[]) {
+                                   const icer_packet_context *pkt_context, icer_image_metadata *metadata,
+                                   icer_output_data_buf_typedef *output_data, icer_image_segment_typedef *segments_encoded[]) {
     int res;
     size_t segment_w, segment_h;
     const uint16_t *segment_start;
@@ -313,7 +314,7 @@ int icer_compress_partition_uint16(const uint16_t *data, const partition_param_t
             partition_col_ind += segment_w;
 
             icer_init_context_model_vals(&context_model, pkt_context->subband_type);
-            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context);
+            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context, metadata);
             if (res != ICER_RESULT_OK) return res;
 
             icer_init_entropy_coder_context(&context, icer_encode_circ_buf, ICER_CIRC_BUF_SIZE,
@@ -359,7 +360,7 @@ int icer_compress_partition_uint16(const uint16_t *data, const partition_param_t
             partition_col_ind += segment_w;
 
             icer_init_context_model_vals(&context_model, pkt_context->subband_type);
-            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context);
+            res = icer_allocate_data_packet(&seg, output_data, segment_num, pkt_context, metadata);
             if (res != ICER_RESULT_OK) return res;
 
             icer_init_entropy_coder_context(&context, icer_encode_circ_buf, ICER_CIRC_BUF_SIZE,

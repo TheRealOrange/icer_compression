@@ -44,9 +44,6 @@ void yuv_to_rgb888_packed(uint16_t *y_channel, uint16_t *u_channel, uint16_t *v_
 int main() {
     const size_t out_w = 1000;
     const size_t out_h = 1000;
-    const int stages = 4;
-    const enum icer_filter_types filt = ICER_FILTER_A;
-    const int segments = 10;
 
     uint16_t *decompress[3];
     uint8_t *display = malloc(out_w*out_h*3);
@@ -81,7 +78,7 @@ int main() {
 
     size_t decomp_w, decomp_h;
     begin = clock();
-    res = icer_decompress_image_yuv_uint16(decompress[0], decompress[1], decompress[2], &decomp_w, &decomp_h, out_w*out_h, buf, length, stages, filt, segments);
+    res = icer_decompress_image_yuv_uint16(decompress[0], decompress[1], decompress[2], &decomp_w, &decomp_h, out_w*out_h, buf, length);
     if (res != ICER_RESULT_OK) {
         printf("error: %d\n", res);
         return 0;

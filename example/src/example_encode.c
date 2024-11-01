@@ -46,7 +46,7 @@ int main() {
 
     printf("loaded image\nwidth    : %5d\nheight   : %5d\nchannels : %5d\n", src_w, src_h, n);
 
-    printf("resizing image to width: %4llu, height: %4llu\n", out_w, out_h);
+    printf("resizing image to width: %4zu, height: %4zu\n", out_w, out_h);
     res = stbir_resize_uint8(data, src_w, src_h, 0,
                              resized, out_w, out_h, 0,
                              1);
@@ -69,13 +69,13 @@ int main() {
     icer_compress_image_uint16(compress, out_w, out_h, stages, filt, segments, &output);
     end = clock();
 
-    printf("compressed size %llu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
+    printf("compressed size %zu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
 
     FILE *ptr1;
 
     ptr1 = fopen(compressed_filename,"wb");
     size_t written = fwrite(output.rearrange_start, sizeof(output.rearrange_start[0]), output.size_used, ptr1);
-    printf("written: %llu\n", written);
+    printf("written: %zu\n", written);
     fflush(ptr1);
     fclose(ptr1);
 

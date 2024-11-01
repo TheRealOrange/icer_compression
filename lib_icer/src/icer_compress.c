@@ -17,6 +17,13 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
                               uint8_t segments, icer_output_data_buf_typedef * const output_data) {
     int res;
     int chan = 0;
+    icer_image_metadata metadata;
+    metadata.image_w = image_w;
+    metadata.image_h = image_h;
+    metadata.stages = stages;
+    metadata.filter = filt;
+    metadata.segments = segments;
+
     res = icer_wavelet_transform_stages_uint8(image, image_w, image_h, stages, filt);
     if (res != ICER_RESULT_OK) return res;
 
@@ -59,8 +66,6 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
             icer_packets[ind].ll_mean_val = ll_mean;
             icer_packets[ind].lsb = lsb;
             icer_packets[ind].priority = priority << lsb;
-            icer_packets[ind].image_w = image_w;
-            icer_packets[ind].image_h = image_h;
             icer_packets[ind].channel = chan;
             ind++; if (ind >= ICER_MAX_PACKETS) return ICER_PACKET_COUNT_EXCEEDED;
 
@@ -69,8 +74,6 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
             icer_packets[ind].ll_mean_val = ll_mean;
             icer_packets[ind].lsb = lsb;
             icer_packets[ind].priority = priority << lsb;
-            icer_packets[ind].image_w = image_w;
-            icer_packets[ind].image_h = image_h;
             icer_packets[ind].channel = chan;
             ind++; if (ind >= ICER_MAX_PACKETS) return ICER_PACKET_COUNT_EXCEEDED;
 
@@ -79,8 +82,6 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
             icer_packets[ind].ll_mean_val = ll_mean;
             icer_packets[ind].lsb = lsb;
             icer_packets[ind].priority = ((priority / 2) << lsb) + 1;
-            icer_packets[ind].image_w = image_w;
-            icer_packets[ind].image_h = image_h;
             icer_packets[ind].channel = chan;
             ind++; if (ind >= ICER_MAX_PACKETS) return ICER_PACKET_COUNT_EXCEEDED;
         }
@@ -93,8 +94,6 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
         icer_packets[ind].ll_mean_val = ll_mean;
         icer_packets[ind].lsb = lsb;
         icer_packets[ind].priority = (2 * priority) << lsb;
-        icer_packets[ind].image_w = image_w;
-        icer_packets[ind].image_h = image_h;
         icer_packets[ind].channel = chan;
         ind++; if (ind >= ICER_MAX_PACKETS) return ICER_PACKET_COUNT_EXCEEDED;
 
@@ -137,7 +136,7 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
         }
 
         icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
-        res = icer_compress_partition_uint8(data_start, &partition_params, image_w, &(icer_packets[it]), output_data,
+        res = icer_compress_partition_uint8(data_start, &partition_params, image_w, &(icer_packets[it]), &metadata, output_data,
                                             icer_rearrange_segments_8[chan][icer_packets[it].decomp_level][icer_packets[it].subband_type][icer_packets[it].lsb]);
         if (res != ICER_RESULT_OK) {
             break;
@@ -164,7 +163,11 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
 }
 
 int icer_decompress_image_uint8(uint8_t * const image, size_t * const image_w, size_t * const image_h, const size_t image_bufsize, const uint8_t *datastream,
-                                const size_t data_length, const uint8_t stages, const enum icer_filter_types filt, const uint8_t segments) {
+                                const size_t data_length) {
+    uint8_t stages;
+    enum icer_filter_types filt;
+    uint8_t segments;
+
     int chan = 0;
     for (int i = 0;i <= ICER_MAX_DECOMP_STAGES;i++) {
         for (int j = 0;j <= ICER_SUBBAND_MAX;j++) {
@@ -181,6 +184,7 @@ int icer_decompress_image_uint8(uint8_t * const image, size_t * const image_w, s
     size_t offset = 0;
     size_t pkt_offset;
     int res;
+    bool found = false;
     uint16_t ll_mean = 0;
     while ((data_length - offset) > 0) {
         seg_start = datastream + offset;
@@ -190,9 +194,15 @@ int icer_decompress_image_uint8(uint8_t * const image, size_t * const image_w, s
             *image_w = seg->image_w;
             *image_h = seg->image_h;
             ll_mean = seg->ll_mean_val;
+            stages = seg->stages;
+            filt = seg->filter;
+            segments = seg->segments;
+            found = true;
         }
         offset += pkt_offset;
     }
+
+    if (!found) return ICER_NO_IMAGE_FOUND;
 
     if (image_bufsize < (*image_w) * (*image_h)) {
         return ICER_BYTE_QUOTA_EXCEEDED;
@@ -277,6 +287,13 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
                               uint8_t segments, icer_output_data_buf_typedef * const output_data) {
     int res;
     int chan = 0;
+    icer_image_metadata metadata;
+    metadata.image_w = image_w;
+    metadata.image_h = image_h;
+    metadata.stages = stages;
+    metadata.filter = filt;
+    metadata.segments = segments;
+
     res = icer_wavelet_transform_stages_uint16(image, image_w, image_h, stages, filt);
     if (res != ICER_RESULT_OK) return res;
 
@@ -319,9 +336,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
             icer_packets_16[ind].ll_mean_val = ll_mean;
             icer_packets_16[ind].lsb = lsb;
             icer_packets_16[ind].priority = priority << lsb;
-            icer_packets_16[ind].image_w = image_w;
-            icer_packets_16[ind].image_h = image_h;
-            icer_packets_16[ind].channel = chan;
+            icer_packets[ind].channel = chan;
             ind++; if (ind >= ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
 
             icer_packets_16[ind].subband_type = ICER_SUBBAND_LH;
@@ -329,9 +344,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
             icer_packets_16[ind].ll_mean_val = ll_mean;
             icer_packets_16[ind].lsb = lsb;
             icer_packets_16[ind].priority = priority << lsb;
-            icer_packets_16[ind].image_w = image_w;
-            icer_packets_16[ind].image_h = image_h;
-            icer_packets_16[ind].channel = chan;
+            icer_packets[ind].channel = chan;
             ind++; if (ind >= ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
 
             icer_packets_16[ind].subband_type = ICER_SUBBAND_HH;
@@ -339,9 +352,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
             icer_packets_16[ind].ll_mean_val = ll_mean;
             icer_packets_16[ind].lsb = lsb;
             icer_packets_16[ind].priority = ((priority / 2) << lsb) + 1;
-            icer_packets_16[ind].image_w = image_w;
-            icer_packets_16[ind].image_h = image_h;
-            icer_packets_16[ind].channel = chan;
+            icer_packets[ind].channel = chan;
             ind++; if (ind >= ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
         }
     }
@@ -353,9 +364,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
         icer_packets_16[ind].ll_mean_val = ll_mean;
         icer_packets_16[ind].lsb = lsb;
         icer_packets_16[ind].priority = (2 * priority) << lsb;
-        icer_packets_16[ind].image_w = image_w;
-        icer_packets_16[ind].image_h = image_h;
-        icer_packets_16[ind].channel = chan;
+        icer_packets[ind].channel = chan;
         ind++; if (ind >= ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
     }
 
@@ -396,7 +405,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
         }
 
         icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
-        res = icer_compress_partition_uint16(data_start, &partition_params, image_w, &(icer_packets_16[it]),
+        res = icer_compress_partition_uint16(data_start, &partition_params, image_w, &(icer_packets_16[it]), &metadata,
                                              output_data, icer_rearrange_segments_16[chan][icer_packets_16[it].decomp_level][icer_packets_16[it].subband_type][icer_packets_16[it].lsb]);
         if (res != ICER_RESULT_OK) {
             break;
@@ -423,7 +432,11 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
 }
 
 int icer_decompress_image_uint16(uint16_t * const image, size_t * const image_w, size_t * const image_h, size_t image_bufsize, const uint8_t *datastream,
-                                 size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments) {
+                                 size_t data_length) {
+    enum icer_filter_types filt;
+    uint8_t segments;
+    uint8_t stages;
+
     int chan = 0;
     for (int i = 0;i <= ICER_MAX_DECOMP_STAGES;i++) {
         for (int j = 0;j <= ICER_SUBBAND_MAX;j++) {
@@ -440,6 +453,7 @@ int icer_decompress_image_uint16(uint16_t * const image, size_t * const image_w,
     size_t offset = 0;
     size_t pkt_offset = 0;
     int res;
+    bool found = false;
     uint16_t ll_mean = 0;
     while ((data_length - offset) > 0) {
         seg_start = datastream + offset;
@@ -449,9 +463,15 @@ int icer_decompress_image_uint16(uint16_t * const image, size_t * const image_w,
             *image_w = seg->image_w;
             *image_h = seg->image_h;
             ll_mean = seg->ll_mean_val;
+            stages = seg->stages;
+            filt = seg->filter;
+            segments = seg->segments;
+            found = true;
         }
         offset += pkt_offset;
     }
+
+    if (!found) return ICER_NO_IMAGE_FOUND;
 
     if (image_bufsize < (*image_w) * (*image_h)) {
         return ICER_BYTE_QUOTA_EXCEEDED;

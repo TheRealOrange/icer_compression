@@ -102,6 +102,7 @@ enum icer_status {
     ICER_PACKET_COUNT_EXCEEDED = -9,
     ICER_FATAL_ERROR = -10,
     ICER_INVALID_INPUT = -11,
+    ICER_NO_IMAGE_FOUND = -12
 };
 
 enum icer_filter_types {
@@ -270,10 +271,16 @@ typedef struct {
     uint8_t ll_mean_val;
     uint8_t lsb;
     uint64_t priority;
-    size_t image_w;
-    size_t image_h;
     uint8_t channel;
 } icer_packet_context;
+
+typedef struct {
+    size_t image_w;
+    size_t image_h;
+    uint8_t stages;
+    uint8_t filter;
+    uint16_t segments;
+} icer_image_metadata;
 
 #ifdef USE_UINT8_FUNCTIONS
 extern icer_packet_context icer_packets[ICER_MAX_PACKETS];
@@ -299,6 +306,9 @@ typedef struct {
     uint8_t lsb_chan;
     uint32_t image_w;
     uint32_t image_h;
+    uint8_t stages;
+    uint8_t filter;
+    uint16_t segments;
     uint32_t data_length; // store data length in bits for the decoder
     uint32_t data_crc32;
     uint32_t crc32;
@@ -395,7 +405,7 @@ int icer_wavelet_transform_2d_uint8(uint8_t *image, size_t image_w, size_t image
 int icer_wavelet_transform_1d_uint8(uint8_t *data, size_t N, size_t stride, enum icer_filter_types filt);
 
 int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *params, size_t rowstride,
-                                  icer_packet_context *pkt_context, icer_output_data_buf_typedef *output_data,
+                                  icer_packet_context *pkt_context, icer_image_metadata *metadata, icer_output_data_buf_typedef *output_data,
                                   icer_image_segment_typedef *segments_encoded[]);
 int icer_compress_bitplane_uint8(const uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                  icer_context_model_typedef *context_model,
@@ -405,11 +415,10 @@ int icer_compress_bitplane_uint8(const uint8_t *data, size_t plane_w, size_t pla
 
 #ifdef USE_DECODE_FUNCTIONS
 int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, const uint8_t *datastream,
-                                size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments);
+                                size_t data_length);
 int icer_decompress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint8_t *v_channel, size_t *image_w,
                                     size_t *image_h, size_t image_bufsize, const uint8_t *datastream,
-                                    size_t data_length, uint8_t stages, enum icer_filter_types filt,
-                                    uint8_t segments);
+                                    size_t data_length);
 
 int icer_inverse_wavelet_transform_stages_uint8(uint8_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
 
@@ -449,7 +458,7 @@ int icer_wavelet_transform_2d_uint16(uint16_t *image, size_t image_w, size_t ima
 int icer_wavelet_transform_1d_uint16(uint16_t *data, size_t N, size_t stride, enum icer_filter_types filt);
 
 int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride,
-                                   const icer_packet_context *pkt_context, icer_output_data_buf_typedef *output_data,
+                                   const icer_packet_context *pkt_context, icer_image_metadata *metadata, icer_output_data_buf_typedef *output_data,
                                    icer_image_segment_typedef *segments_encoded[]);
 int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                   icer_context_model_typedef *context_model,
@@ -459,11 +468,10 @@ int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t p
 
 #ifdef USE_DECODE_FUNCTIONS
 int icer_decompress_image_uint16(uint16_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, const uint8_t *datastream,
-                                 size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments);
+                                 size_t data_length);
 int icer_decompress_image_yuv_uint16(uint16_t * y_channel, uint16_t * u_channel, uint16_t * v_channel, size_t *image_w,
                                      size_t *image_h, size_t image_bufsize, const uint8_t *datastream,
-                                     size_t data_length, uint8_t stages, enum icer_filter_types filt,
-                                     uint8_t segments);
+                                     size_t data_length);
 
 int icer_inverse_wavelet_transform_stages_uint16(uint16_t *image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt);
 
@@ -496,7 +504,8 @@ void icer_init_entropy_coder_context(icer_encoder_context_typedef *encoder_conte
 int icer_encode_bit(icer_encoder_context_typedef *encoder_context, uint8_t bit, uint32_t zero_cnt, uint32_t total_cnt);
 int icer_popbuf_while_avail(icer_encoder_context_typedef *encoder_context);
 int icer_flush_encode(icer_encoder_context_typedef *encoder_context);
-int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data_buf_typedef * const output_data, uint8_t segment_num, const icer_packet_context *context);
+int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data_buf_typedef * const output_data,
+                              uint8_t segment_num, const icer_packet_context *context, icer_image_metadata *metadata);
 #endif
 
 #ifdef USE_DECODE_FUNCTIONS

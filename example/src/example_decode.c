@@ -18,9 +18,6 @@ const char filename[] = "./decompress.bmp";
 int main() {
     const size_t out_w = 1000;
     const size_t out_h = 1000;
-    const int stages = 4;
-    const enum icer_filter_types filt = ICER_FILTER_A;
-    const int segments = 6;
 
     uint16_t *decompress = malloc(out_w*out_h*2);
     uint8_t *display = malloc(out_w*out_h);
@@ -51,7 +48,7 @@ int main() {
 
     size_t decomp_w, decomp_h;
     begin = clock();
-    res = icer_decompress_image_uint16(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length, stages, filt, segments);
+    res = icer_decompress_image_uint16(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length);
     if (res != ICER_RESULT_OK) {
         printf("error: %d\n", res);
         return 0;
