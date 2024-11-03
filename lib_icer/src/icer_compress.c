@@ -273,6 +273,7 @@ int icer_decompress_image_uint8(uint8_t * const image, size_t * const image_w, s
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
+#ifdef USE_ENCODE_FUNCTIONS
 int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t image_h, uint8_t stages, enum icer_filter_types filt,
                               uint8_t segments, icer_output_data_buf_typedef * const output_data) {
     int res;
@@ -421,7 +422,9 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
 
     return res;
 }
+#endif
 
+#ifdef USE_DECODE_FUNCTIONS
 int icer_decompress_image_uint16(uint16_t * const image, size_t * const image_w, size_t * const image_h, size_t image_bufsize, const uint8_t *datastream,
                                  size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments) {
     int chan = 0;
@@ -529,6 +532,7 @@ int icer_decompress_image_uint16(uint16_t * const image, size_t * const image_w,
     icer_remove_negative_uint16(image, im_w, im_h);
     return ICER_RESULT_OK;
 }
+#endif
 #endif
 
 #ifdef USE_DECODE_FUNCTIONS
