@@ -51,14 +51,14 @@ uint32_t __inline __clz( uint32_t value ) {
  * decoding, the user should define the above line and allocate memory for the buffers listed below
  *
  * for encoding uint8
- * icer_packet_context icer_packets[ICER_MAX_PACKETS];
+ * icer_packet_context_typedef icer_packets[ICER_MAX_PACKETS];
  * icer_image_segment_typedef *icer_rearrange_segments_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][7][ICER_MAX_SEGMENTS + 1];
  *
  * for decoding uint8
  * icer_image_segment_typedef *icer_reconstruct_data_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
  *
  * for encoding uint16
- * icer_packet_context icer_packets_16[ICER_MAX_PACKETS_16];
+ * icer_packet_context_typedef icer_packets_16[ICER_MAX_PACKETS_16];
  * icer_image_segment_typedef *icer_rearrange_segments_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][15][ICER_MAX_SEGMENTS + 1];
  *
  * for decoding uint16
@@ -272,7 +272,8 @@ typedef struct {
     uint8_t lsb;
     uint64_t priority;
     uint8_t channel;
-} icer_packet_context;
+    bool include_metadata;
+} icer_packet_context_typedef;
 
 typedef struct {
     size_t image_w;
@@ -280,39 +281,68 @@ typedef struct {
     uint8_t stages;
     uint8_t filter;
     uint16_t segments;
-} icer_image_metadata;
+} icer_image_metadata_typedef;
 
 #ifdef USE_UINT8_FUNCTIONS
-extern icer_packet_context icer_packets[ICER_MAX_PACKETS];
+extern icer_packet_context_typedef icer_packets[ICER_MAX_PACKETS];
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
-extern icer_packet_context icer_packets_16[ICER_MAX_PACKETS_16];
+extern icer_packet_context_typedef icer_packets_16[ICER_MAX_PACKETS_16];
 #endif
 
+/* we store the metadata only in some segments
+ * logically, we use the MSB segments only because
+ * without the MSB segments, the data for that segment
+ * cannot be reconstructed anyway
+ *
+ * To accomplish this, we use a flag to indicate if
+ * an image segment contains metadata after the segment
+ * pointer
+ */
 #define ICER_PACKET_PREAMBLE 0x605B
+#define ICER_SEGMENT_METADATA_FLAG_MASK 0x80
+#define ICER_SEGMENT_SUBBAND_TYPE_MASK 0x7f
+#define ICER_GET_METADATA_FLAG_MACRO(x) ((x) & ICER_SEGMENT_METADATA_FLAG_MASK)
+#define ICER_SET_METADATA_FLAG_MACRO(x) ((x) | ICER_SEGMENT_METADATA_FLAG_MASK)
+#define ICER_GET_SUBBAND_TYPE_MACRO(x) ((x) & ICER_SEGMENT_SUBBAND_TYPE_MASK)
+
+/* additionally, to save more space and to maintain the
+ * 32bit alignment of the struct, we use one byte to store
+ * both the LSB index (significance) of the segment
+ * and the channel mask for color encoding
+ */
 #define ICER_SEGMENT_LSB_MASK 0x0f
 #define ICER_SEGMENT_CHANNEL_MASK 0xf0
 #define ICER_GET_LSB_MACRO(x) ((x) & ICER_SEGMENT_LSB_MASK)
 #define ICER_GET_CHANNEL_MACRO(x) (((x) & ICER_SEGMENT_CHANNEL_MASK) >> 4)
 #define ICER_SET_CHANNEL_MACRO(x) ((x) << 4)
 
+/* depending on whether the metadata flag
+ * is set, either the data begins right after
+ * segment struct, or there is an additional
+ * metadata struct data after the segment
+ * struct
+ */
 typedef struct {
     uint16_t preamble;
     uint16_t ll_mean_val;
     uint8_t decomp_level;
-    uint8_t subband_type;
+    uint8_t metadata_subband_type;
     uint8_t segment_number;
     uint8_t lsb_chan;
+    uint32_t data_length; // store data length in bits for the decoder
+    uint32_t data_crc32;
+    uint32_t crc32;
+} icer_image_segment_typedef;
+
+typedef struct {
     uint32_t image_w;
     uint32_t image_h;
     uint8_t stages;
     uint8_t filter;
     uint16_t segments;
-    uint32_t data_length; // store data length in bits for the decoder
-    uint32_t data_crc32;
-    uint32_t crc32;
-} icer_image_segment_typedef;
+} icer_image_segment_metadata_typedef;
 
 typedef struct {
     size_t size_used;
@@ -405,12 +435,12 @@ int icer_wavelet_transform_2d_uint8(uint8_t *image, size_t image_w, size_t image
 int icer_wavelet_transform_1d_uint8(uint8_t *data, size_t N, size_t stride, enum icer_filter_types filt);
 
 int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *params, size_t rowstride,
-                                  icer_packet_context *pkt_context, icer_image_metadata *metadata, icer_output_data_buf_typedef *output_data,
+                                  icer_packet_context_typedef *pkt_context, icer_image_metadata_typedef *metadata, icer_output_data_buf_typedef *output_data,
                                   icer_image_segment_typedef *segments_encoded[]);
 int icer_compress_bitplane_uint8(const uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                  icer_context_model_typedef *context_model,
                                  icer_encoder_context_typedef *encoder_context,
-                                 const icer_packet_context *pkt_context);
+                                 const icer_packet_context_typedef *pkt_context);
 #endif
 
 #ifdef USE_DECODE_FUNCTIONS
@@ -430,7 +460,7 @@ int icer_decompress_partition_uint8(uint8_t *const data, const partition_param_t
 int icer_decompress_bitplane_uint8(uint8_t *const data, size_t plane_w, size_t plane_h, size_t rowstride,
                                    icer_context_model_typedef *context_model,
                                    icer_decoder_context_typedef *decoder_context,
-                                   const icer_packet_context *pkt_context);
+                                   const icer_packet_context_typedef *pkt_context);
 void icer_remove_negative_uint8(uint8_t * const image, size_t image_w, size_t image_h);
 #endif
 
@@ -458,12 +488,12 @@ int icer_wavelet_transform_2d_uint16(uint16_t *image, size_t image_w, size_t ima
 int icer_wavelet_transform_1d_uint16(uint16_t *data, size_t N, size_t stride, enum icer_filter_types filt);
 
 int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride,
-                                   const icer_packet_context *pkt_context, icer_image_metadata *metadata, icer_output_data_buf_typedef *output_data,
+                                   const icer_packet_context_typedef *pkt_context, icer_image_metadata_typedef *metadata, icer_output_data_buf_typedef *output_data,
                                    icer_image_segment_typedef *segments_encoded[]);
 int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                   icer_context_model_typedef *context_model,
                                   icer_encoder_context_typedef *encoder_context,
-                                  const icer_packet_context *pkt_context);
+                                  const icer_packet_context_typedef *pkt_context);
 #endif
 
 #ifdef USE_DECODE_FUNCTIONS
@@ -483,7 +513,7 @@ int icer_decompress_partition_uint16(uint16_t *data, const partition_param_typde
 int icer_decompress_bitplane_uint16(uint16_t *const data, size_t plane_w, size_t plane_h, size_t rowstride,
                                     icer_context_model_typedef *context_model,
                                     icer_decoder_context_typedef *decoder_context,
-                                    const icer_packet_context *pkt_context);
+                                    const icer_packet_context_typedef *pkt_context);
 void icer_remove_negative_uint16(uint16_t * const image, size_t image_w, size_t image_h);
 #endif
 
@@ -505,7 +535,8 @@ int icer_encode_bit(icer_encoder_context_typedef *encoder_context, uint8_t bit, 
 int icer_popbuf_while_avail(icer_encoder_context_typedef *encoder_context);
 int icer_flush_encode(icer_encoder_context_typedef *encoder_context);
 int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data_buf_typedef * const output_data,
-                              uint8_t segment_num, const icer_packet_context *context, icer_image_metadata *metadata);
+                              uint8_t segment_num, const icer_packet_context_typedef *context, icer_image_metadata_typedef *metadata,
+                              uint8_t **data_start);
 #endif
 
 #ifdef USE_DECODE_FUNCTIONS

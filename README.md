@@ -193,7 +193,7 @@ When `USER_PROVIDED_BUFFERS` is defined, you must allocate the following buffers
 For 8-bit encoding:
 
 ```c
-icer_packet_context icer_packets[ICER_MAX_PACKETS];
+icer_packet_context_typedef icer_packets[ICER_MAX_PACKETS];
 icer_image_segment_typedef *icer_rearrange_segments_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][7][ICER_MAX_SEGMENTS + 1];
 ```
 
@@ -206,7 +206,7 @@ icer_image_segment_typedef *icer_reconstruct_data_8[ICER_CHANNEL_MAX + 1][ICER_M
 For 16-bit encoding:
 
 ```c
-icer_packet_context icer_packets_16[ICER_MAX_PACKETS_16];
+icer_packet_context_typedef icer_packets_16[ICER_MAX_PACKETS_16];
 icer_image_segment_typedef *icer_rearrange_segments_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][15][ICER_MAX_SEGMENTS + 1];
 ```
 

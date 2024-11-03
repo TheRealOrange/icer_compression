@@ -20,7 +20,7 @@ static inline int8_t get_sign_uint16(const uint16_t* data, uint8_t lsb);
 int icer_compress_bitplane_uint8(const uint8_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                  icer_context_model_typedef *context_model,
                                  icer_encoder_context_typedef *encoder_context,
-                                 const icer_packet_context *pkt_context) {
+                                 const icer_packet_context_typedef *pkt_context) {
     int res;
     const uint8_t *pos;
     const uint8_t *rowstart = data;
@@ -167,7 +167,7 @@ int icer_compress_bitplane_uint8(const uint8_t *data, size_t plane_w, size_t pla
 int icer_decompress_bitplane_uint8(uint8_t * const data, size_t plane_w, size_t plane_h, size_t rowstride,
                                    icer_context_model_typedef *context_model,
                                    icer_decoder_context_typedef *decoder_context,
-                                   const icer_packet_context *pkt_context) {
+                                   const icer_packet_context_typedef *pkt_context) {
     int res;
     uint8_t *pos;
     uint8_t *rowstart = data;
@@ -312,7 +312,7 @@ int icer_decompress_bitplane_uint8(uint8_t * const data, size_t plane_w, size_t 
 int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                   icer_context_model_typedef *context_model,
                                   icer_encoder_context_typedef *encoder_context,
-                                  const icer_packet_context *pkt_context) {
+                                  const icer_packet_context_typedef *pkt_context) {
     int res;
     const uint16_t *pos;
     const uint16_t *rowstart = data;
@@ -461,7 +461,7 @@ int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t p
 int icer_decompress_bitplane_uint16(uint16_t * const data, size_t plane_w, size_t plane_h, size_t rowstride,
                                     icer_context_model_typedef *context_model,
                                     icer_decoder_context_typedef *decoder_context,
-                                    const icer_packet_context *pkt_context) {
+                                    const icer_packet_context_typedef *pkt_context) {
     int res;
     uint16_t *pos;
     uint16_t *rowstart = data;

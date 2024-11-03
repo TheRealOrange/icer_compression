@@ -49,11 +49,11 @@ int main() {
     size_t decomp_w, decomp_h;
     begin = clock();
     res = icer_decompress_image_uint16(decompress, &decomp_w, &decomp_h, out_w*out_h, buf, length);
+    end = clock();
     if (res != ICER_RESULT_OK) {
         printf("error: %d\n", res);
         return 0;
     }
-    end = clock();
     printf("decompress time taken: %lf\n", (float)(end-begin)/CLOCKS_PER_SEC);
 
     for (size_t i = 0;i < out_w*out_h;i++) {

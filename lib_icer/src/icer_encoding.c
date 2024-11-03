@@ -208,7 +208,9 @@ static inline int16_t alloc_buf(icer_encoder_context_typedef *cntxt) {
 /* data packet functions */
 
 int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data_buf_typedef * const output_data,
-                              uint8_t segment_num, const icer_packet_context *context, icer_image_metadata *metadata) {
+                              uint8_t segment_num, const icer_packet_context_typedef *context, icer_image_metadata_typedef *metadata,
+                              uint8_t **data_start) {
+    icer_image_segment_metadata_typedef *pkt_metadata;
     size_t buf_len = output_data->size_allocated - output_data->size_used;
     if (buf_len < sizeof(icer_image_segment_typedef)) {
         return ICER_BYTE_QUOTA_EXCEEDED;
@@ -216,23 +218,47 @@ int icer_allocate_data_packet(icer_image_segment_typedef **pkt, icer_output_data
     (*pkt) = (icer_image_segment_typedef *) (output_data->data_start + output_data->size_used);
     (*pkt)->preamble = ICER_PACKET_PREAMBLE;
     (*pkt)->decomp_level = context->decomp_level;
-    (*pkt)->subband_type = context->subband_type;
+    (*pkt)->metadata_subband_type = context->subband_type;
     (*pkt)->segment_number = segment_num;
     (*pkt)->lsb_chan = context->lsb | ICER_SET_CHANNEL_MACRO(context->channel);
     (*pkt)->ll_mean_val = context->ll_mean_val;
-    (*pkt)->image_w = metadata->image_w;
-    (*pkt)->image_h = metadata->image_h;
-    (*pkt)->stages = metadata->stages;
-    (*pkt)->filter = metadata->filter;
-    (*pkt)->segments = metadata->segments;
     (*pkt)->data_crc32 = 0;
     (*pkt)->crc32 = 0;
 
     output_data->size_used += sizeof(icer_image_segment_typedef);
     buf_len -= sizeof(icer_image_segment_typedef);
 
+    /* if we want to include metadata with the image segment,
+     * set the flag to indicate that there is a metadata
+     * struct placed after the image segment data struct
+     * before the data actually begins
+     */
+    if (context->include_metadata) {
+        if (buf_len < sizeof(icer_image_segment_metadata_typedef)) {
+            return ICER_BYTE_QUOTA_EXCEEDED;
+        }
+        (*pkt)->metadata_subband_type = ICER_SET_METADATA_FLAG_MACRO(context->subband_type);
+        pkt_metadata = (icer_image_segment_metadata_typedef *) (output_data->data_start + output_data->size_used);
+        pkt_metadata->image_w = metadata->image_w;
+        pkt_metadata->image_h = metadata->image_h;
+        pkt_metadata->stages = metadata->stages;
+        pkt_metadata->filter = metadata->filter;
+        pkt_metadata->segments = metadata->segments;
+
+        // remember to include the size of the metadata
+        output_data->size_used += sizeof(icer_image_segment_metadata_typedef);
+        buf_len -= sizeof(icer_image_segment_metadata_typedef);
+    }
+
     // store max data length first
     (*pkt)->data_length = buf_len;
+
+    /* if the data packet contains metadata, write
+     * the actual encoded data after the metadata
+     * struct (the data starts later compared to a no
+     * metadata image segment)
+     */
+    *data_start = (output_data->data_start + output_data->size_used);
 
     return ICER_RESULT_OK;
 }

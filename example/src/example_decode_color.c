@@ -79,11 +79,11 @@ int main() {
     size_t decomp_w, decomp_h;
     begin = clock();
     res = icer_decompress_image_yuv_uint16(decompress[0], decompress[1], decompress[2], &decomp_w, &decomp_h, out_w*out_h, buf, length);
+    end = clock();
     if (res != ICER_RESULT_OK) {
         printf("error: %d\n", res);
         return 0;
     }
-    end = clock();
     printf("decompress time taken: %lf\n", (float)(end-begin)/CLOCKS_PER_SEC);
 
     printf("converting to rgb\n");
