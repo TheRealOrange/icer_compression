@@ -337,7 +337,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
             icer_packets_16[ind].ll_mean_val = ll_mean;
             icer_packets_16[ind].lsb = lsb;
             icer_packets_16[ind].priority = priority << lsb;
-            icer_packets[ind].channel = chan;
+            icer_packets_16[ind].channel = chan;
             ind++; if (ind >= ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
 
             icer_packets_16[ind].subband_type = ICER_SUBBAND_LH;
@@ -345,7 +345,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
             icer_packets_16[ind].ll_mean_val = ll_mean;
             icer_packets_16[ind].lsb = lsb;
             icer_packets_16[ind].priority = priority << lsb;
-            icer_packets[ind].channel = chan;
+            icer_packets_16[ind].channel = chan;
             ind++; if (ind >= ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
 
             icer_packets_16[ind].subband_type = ICER_SUBBAND_HH;
@@ -353,7 +353,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
             icer_packets_16[ind].ll_mean_val = ll_mean;
             icer_packets_16[ind].lsb = lsb;
             icer_packets_16[ind].priority = ((priority / 2) << lsb) + 1;
-            icer_packets[ind].channel = chan;
+            icer_packets_16[ind].channel = chan;
             ind++; if (ind >= ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
         }
     }
@@ -365,7 +365,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
         icer_packets_16[ind].ll_mean_val = ll_mean;
         icer_packets_16[ind].lsb = lsb;
         icer_packets_16[ind].priority = (2 * priority) << lsb;
-        icer_packets[ind].channel = chan;
+        icer_packets_16[ind].channel = chan;
         ind++; if (ind >= ICER_MAX_PACKETS_16) return ICER_PACKET_COUNT_EXCEEDED;
     }
 
