@@ -308,6 +308,7 @@ int icer_decompress_bitplane_uint8(uint8_t * const data, size_t plane_w, size_t 
 #endif
 
 #ifdef USE_UINT16_FUNCTIONS
+#ifdef USE_ENCODE_FUNCTIONS
 int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t plane_h, size_t rowstride,
                                   icer_context_model_typedef *context_model,
                                   icer_encoder_context_typedef *encoder_context,
@@ -454,7 +455,9 @@ int icer_compress_bitplane_uint16(const uint16_t *data, size_t plane_w, size_t p
     }
     return ICER_RESULT_OK;
 }
+#endif
 
+#ifdef USE_DECODE_FUNCTIONS
 int icer_decompress_bitplane_uint16(uint16_t * const data, size_t plane_w, size_t plane_h, size_t rowstride,
                                     icer_context_model_typedef *context_model,
                                     icer_decoder_context_typedef *decoder_context,
@@ -597,6 +600,7 @@ int icer_decompress_bitplane_uint16(uint16_t * const data, size_t plane_w, size_
     }
     return ICER_RESULT_OK;
 }
+#endif
 #endif
 
 
