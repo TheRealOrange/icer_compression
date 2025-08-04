@@ -93,10 +93,10 @@ int main() {
     icer_init_output_struct(&output, datastream, datastream_size*2, datastream_size);
 
     begin = clock();
-    icer_compress_image_yuv_uint16(compress[0], compress[1], compress[2], out_w, out_h, stages, filt, segments, &output);
+    res = icer_compress_image_yuv_uint16(compress[0], compress[1], compress[2], out_w, out_h, stages, filt, segments, &output);
     end = clock();
 
-    printf("compressed size %zu, time taken: %lf\n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC);
+    printf("compressed size %zu, time taken: %lf, res: %d \n", output.size_used, (float)(end-begin)/CLOCKS_PER_SEC, res);
 
     FILE *ptr1;
 

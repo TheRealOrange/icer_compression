@@ -67,7 +67,72 @@ There are a few key design considerations which were taking into account when wr
 
 (again, recommended that you carefully read the NASA document to understand why and how these are significant)
 
-## How do I use it?
+## How do I test it?
+
+The project uses CMake for building. To build all components:
+
+```bash
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make
+```
+
+This will build:
+- `compress`, `decompress`,  Grayscale compression/decompression **implementation** examples
+- `compress_color`, `decompress_color` - Color compression/decompression **implementation** examples
+- `icer_util` - Standalone command-line utility to compress/decompress ICER images
+
+### Command-line Tool
+
+The `icer_util` program is a command-line program for compressing and decompressing images with the ICER algorithm. You can use this to test the compression efficacy on input images, and play around with byte quotas.
+
+#### Basic Usage
+
+```bash
+# Compress an image (with default parameters)
+./icer_util compress input.jpg output.bin
+
+# Decompress an image (compulsory to specify color or grayscale)
+./icer_util decompress compressed.bin output.bmp --color
+./icer_util decompress compressed.bin output.bmp --grayscale
+
+# Show availabe options
+./icer_util --help
+```
+
+#### Advanced Options
+
+```bash
+# Compress with specific parameters
+./icer_util compress input.png output.bin \
+    --stages 5 \
+    --filter B \
+    --segments 10 \
+    -t 150000 # byte quota
+
+# Set target compression size in bytes
+./icer_util compress input.jpg output.bin -t 100000
+```
+
+#### Supported Image Formats
+
+- **Input (compression):** JPEG, PNG, BMP, TGA, and other formats supported by the STB Image library
+- **Output (decompression):** BMP format
+
+### Integration Examples
+
+The integration examples show an example usage of the library functions within a project. It is for reference only, though you can build and run it to test.
+
+To run the example code, simply build it and place the `boat.512.bmp`  (and `boatcolor.512.bmp` for color encode) image as the same folder as the executable to generate the output.
+
+The examples demonstrate:
+- `compress` / `example_encode.c` - Basic grayscale image compression
+- `decompress` / `example_decode.c` - Basic grayscale image decompression
+- `compress_color` / `example_encode_color.c` - Color image compression using YUV
+- `decompress_color` / `example_decode_color.c` - Color image decompression from YUV
+
+## How do I use it in my project?
 
 The project is designed as a C-library and as such is intended to be used as a part of a larger program, not as a standalone program. 
 
@@ -109,10 +174,10 @@ which is the function which enables the user to specify an image buffer of a spe
 
 ```c
 // For grayscale/single channel images
-int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, uint8_t *datastream, size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments);
+int icer_decompress_image_uint8(uint8_t *image, size_t *image_w, size_t *image_h, size_t image_bufsize, const uint8_t *datastream, const size_t data_length);
 
 // For colour images
-int icer_decompress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint8_t *v_channel, size_t *image_w, size_t *image_h, size_t image_bufsize, const uint8_t *datastream, size_t data_length, uint8_t stages, enum icer_filter_types filt, uint8_t segments);
+int icer_decompress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint8_t *v_channel, size_t *image_w, size_t *image_h, size_t image_bufsize, const uint8_t *datastream, const size_t data_length);
 ```
 
 which is the function which enables the user to decompress a byte stream stored inside `datastream` and fill the image and the dimensions into the buffer specified.
@@ -124,10 +189,6 @@ int icer_get_image_dimensions(const uint8_t *datastream, size_t data_length, siz
 ```
 
 which can be used to get the dimensions of an encoded image (useful for knowing how much space to allocate for the image to decode it).
-
-## How do I test it?
-
-To run the example code, simply build it and place the `boat.512.bmp`  (and `boatcolor.512.bmp` for color encode) image as the same folder as the executable to generate the output.
 
 ## Advanced Configuration
 

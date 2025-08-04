@@ -29,19 +29,25 @@ typedef struct {
 } icer_config_t;
 
 void print_usage(const char *program_name) {
-  printf("Usage: %s <operation> <input> <output> [options]\n\n", program_name);
-  printf("Operations:\n");
+  printf("usage: %s <operation> <input> <output> [options]\n\n", program_name);
+  printf("operations:\n");
   printf("  compress    Compress an image file\n");
   printf("  decompress  Decompress a compressed file\n\n");
-  printf("Options:\n");
+  printf("compression options:\n");
   printf("  -s, --stages <n>      Number of wavelet decomposition stages (default: 4)\n");
   printf("  -f, --filter <type>   Filter type: A, B, C, D, E, F, Q (default: A)\n");
   printf("  -g, --segments <n>    Number of error containment segments (default: 6)\n");
   printf("  -t, --size <size>     Target compressed size in bytes (default: lossless)\n");
   printf("  -c, --color           Force color compression (YUV)\n");
   printf("  -G, --grayscale       Force grayscale compression\n");
+  printf("\n");
+  printf("decompression options:\n");
+  printf("  -c, --color           Decompress as color image\n");
+  printf("  -G, --grayscale       Decompress as grayscale image\n");
+  printf("\n");
+  printf("others:\n");
   printf("  --help                Show this help message\n\n");
-  printf("Note: For decompression, you must specify either --color or --grayscale\n");
+  printf("For decompression, you must specify either --color or --grayscale\n");
 }
 
 enum icer_filter_types parse_filter_type(const char *filter_str) {
@@ -198,7 +204,7 @@ int compress_image(icer_config_t *config) {
   }
   end = clock();
 
-  if (compress_result != ICER_RESULT_OK) {
+  if (compress_result != ICER_RESULT_OK && compress_result != ICER_BYTE_QUOTA_EXCEEDED) {
     fprintf(stderr, "Error: Compression failed with code %d\n", compress_result);
     result = 1;
     goto cleanup;
@@ -378,12 +384,33 @@ int main(int argc, char *argv[]) {
       {0, 0, 0, 0}
   };
 
+  // First, we need to determine the operation to know which parameters to allow
+  if (argc < 2) {
+    fprintf(stderr, "Error: Missing operation\n");
+    print_usage(argv[0]);
+    return 1;
+  }
+
+  char *operation = argv[1];
+  int is_compress = (strcmp(operation, "compress") == 0);
+  int is_decompress = (strcmp(operation, "decompress") == 0);
+
+  if (!is_compress && !is_decompress) {
+    fprintf(stderr, "Error: Operation must be 'compress' or 'decompress'\n");
+    print_usage(argv[0]);
+    return 1;
+  }
+
   int option_index = 0;
   int c;
 
   while ((c = getopt_long(argc, argv, "s:f:g:t:cG", long_options, &option_index)) != -1) {
     switch (c) {
       case 's':
+        if (!is_compress) {
+          fprintf(stderr, "Error: --stages parameter only allowed for compression\n");
+          return 1;
+        }
         config.stages = atoi(optarg);
         if (config.stages < 1 || config.stages > 6) {
           fprintf(stderr, "Error: Stages must be between 1 and 6\n");
@@ -391,9 +418,17 @@ int main(int argc, char *argv[]) {
         }
         break;
       case 'f':
+        if (!is_compress) {
+          fprintf(stderr, "Error: --filter parameter only allowed for compression\n");
+          return 1;
+        }
         config.filter = parse_filter_type(optarg);
         break;
       case 'g':
+        if (!is_compress) {
+          fprintf(stderr, "Error: --segments parameter only allowed for compression\n");
+          return 1;
+        }
         config.segments = atoi(optarg);
         if (config.segments < 1 || config.segments > 32) {
           fprintf(stderr, "Error: Segments must be between 1 and 32\n");
@@ -401,6 +436,10 @@ int main(int argc, char *argv[]) {
         }
         break;
       case 't':
+        if (!is_compress) {
+          fprintf(stderr, "Error: --size parameter only allowed for compression\n");
+          return 1;
+        }
         config.target_size = atoi(optarg);
         if (config.target_size < 0) {
           fprintf(stderr, "Error: Target size must be non-negative (0 = lossless)\n");
@@ -441,11 +480,6 @@ int main(int argc, char *argv[]) {
   config.operation = argv[optind];
   config.input_file = argv[optind + 1];
   config.output_file = argv[optind + 2];
-
-  if (strcmp(config.operation, "compress") != 0 && strcmp(config.operation, "decompress") != 0) {
-    fprintf(stderr, "Error: Operation must be 'compress' or 'decompress'\n");
-    return 1;
-  }
 
   // init ICER library
   int init_result = icer_init();
