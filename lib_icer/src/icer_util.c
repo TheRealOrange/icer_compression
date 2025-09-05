@@ -18,7 +18,7 @@ icer_image_segment_typedef *icer_rearrange_segments_8[ICER_CHANNEL_MAX + 1][ICER
 #endif
 
 #ifdef USE_DECODE_FUNCTIONS
-icer_image_segment_typedef *icer_reconstruct_data_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
+const icer_image_segment_typedef *icer_reconstruct_data_8[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][7];
 #endif
 #endif
 
@@ -29,7 +29,7 @@ icer_image_segment_typedef *icer_rearrange_segments_16[ICER_CHANNEL_MAX + 1][ICE
 #endif
 
 #ifdef USE_DECODE_FUNCTIONS
-icer_image_segment_typedef *icer_reconstruct_data_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
+const icer_image_segment_typedef *icer_reconstruct_data_16[ICER_CHANNEL_MAX + 1][ICER_MAX_DECOMP_STAGES + 1][ICER_SUBBAND_MAX + 1][ICER_MAX_SEGMENTS + 1][15];
 #endif
 #endif
 

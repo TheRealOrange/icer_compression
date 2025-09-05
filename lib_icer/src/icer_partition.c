@@ -58,7 +58,7 @@ int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll
 #ifdef USE_ENCODE_FUNCTIONS
 int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *params, size_t rowstride, icer_packet_context_typedef *pkt_context,
                                   icer_image_metadata_typedef *metadata, icer_output_data_buf_typedef * const output_data,
-                                  icer_image_segment_typedef *segments_encoded[]) {
+                                  const icer_image_segment_typedef *segments_encoded[]) {
     int res;
     size_t segment_w, segment_h;
     const uint8_t *segment_start;
@@ -171,7 +171,7 @@ int icer_compress_partition_uint8(const uint8_t *data, partition_param_typdef *p
 
 #ifdef USE_DECODE_FUNCTIONS
 int icer_decompress_partition_uint8(uint8_t * const data, const partition_param_typdef *params, size_t rowstride,
-                                    icer_image_segment_typedef *seg[][7]) {
+                                    const icer_image_segment_typedef *seg[][7]) {
     int res;
     size_t segment_w, segment_h;
     uint8_t *segment_start;
@@ -295,7 +295,7 @@ int icer_decompress_partition_uint8(uint8_t * const data, const partition_param_
 #ifdef USE_ENCODE_FUNCTIONS
 int icer_compress_partition_uint16(const uint16_t *data, const partition_param_typdef *params, size_t rowstride,
                                    const icer_packet_context_typedef *pkt_context, icer_image_metadata_typedef *metadata,
-                                   icer_output_data_buf_typedef *output_data, icer_image_segment_typedef *segments_encoded[]) {
+                                   icer_output_data_buf_typedef *output_data, const icer_image_segment_typedef *segments_encoded[]) {
     int res;
     size_t segment_w, segment_h;
     const uint16_t *segment_start;
@@ -411,7 +411,7 @@ int icer_compress_partition_uint16(const uint16_t *data, const partition_param_t
 
 #ifdef USE_DECODE_FUNCTIONS
 int icer_decompress_partition_uint16(uint16_t * const data, const partition_param_typdef * params, size_t rowstride,
-                                    icer_image_segment_typedef *seg[][15]) {
+                                    const icer_image_segment_typedef *seg[][15]) {
     int res;
     size_t segment_w, segment_h;
     uint16_t *segment_start;
@@ -466,10 +466,7 @@ int icer_decompress_partition_uint16(uint16_t * const data, const partition_para
                                                   seg[segment_num][lsb]->data_length);
                 res = icer_decompress_bitplane_uint16(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
                                                      &pkt_context);
-                if (res != ICER_RESULT_OK) {
-                    printf("lsb: %d, res: %d\n", lsb, res);
-                    break;
-                }
+                if (res != ICER_RESULT_OK) break;
                 lsb--;
             }
 
@@ -519,10 +516,7 @@ int icer_decompress_partition_uint16(uint16_t * const data, const partition_para
                                                   seg[segment_num][lsb]->data_length);
                 res = icer_decompress_bitplane_uint16(segment_start, segment_w, segment_h, rowstride, &context_model, &context,
                                                      &pkt_context);
-                if (res != ICER_RESULT_OK) {
-                    printf("lsb: %d, res: %d\n", lsb, res);
-                    break;
-                }
+                if (res != ICER_RESULT_OK) break;
                 lsb--;
             }
 
