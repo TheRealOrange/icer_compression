@@ -623,7 +623,7 @@ static inline bool get_bit_significance_uint8(const uint8_t* data, uint8_t lsb) 
 }
 
 static inline int8_t get_sign_uint8(const uint8_t* data, uint8_t lsb) {
-    return ((int8_t)(*data) >> 7) * (int8_t)get_bit_significance_uint8(data, lsb);
+    return (int8_t)(((int8_t)(*data) >> 7) * (int8_t)get_bit_significance_uint8(data, lsb));
 }
 #endif
 
@@ -638,6 +638,6 @@ static inline bool get_bit_significance_uint16(const uint16_t* data, uint8_t lsb
 }
 
 static inline int8_t get_sign_uint16(const uint16_t* data, uint8_t lsb) {
-    return ((int16_t)(*data) >> 15) * (int8_t)get_bit_significance_uint16(data, lsb);
+    return (int8_t)(((int16_t)(*data) >> 15) * (int8_t)get_bit_significance_uint16(data, lsb));
 }
 #endif

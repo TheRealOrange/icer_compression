@@ -7,10 +7,12 @@
 #include "icer.h"
 
 static inline int comp_packet(const void *a, const void *b) {
-    if (((icer_packet_context *)a)->priority == ((icer_packet_context *)b)->priority) {
-        return ((icer_packet_context *)a)->subband_type - ((icer_packet_context *)b)->subband_type;
-    }
-    return ((icer_packet_context *)b)->priority - ((icer_packet_context *)a)->priority;
+  if (((icer_packet_context *)a)->priority == ((icer_packet_context *)b)->priority) {
+    // prioritize based on subband type given same priority
+    return (((icer_packet_context *)a)->subband_type > ((icer_packet_context *)b)->subband_type) ? 1 :
+           (((icer_packet_context *)a)->subband_type < ((icer_packet_context *)b)->subband_type) ? -1 : 0;
+  }
+  return (((icer_packet_context *)a)->priority > ((icer_packet_context *)b)->priority) ? -1 : 1;
 }
 
 #ifdef USE_UINT8_FUNCTIONS
@@ -59,7 +61,7 @@ int icer_compress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint8_
         signed_pixel[ICER_CHANNEL_V] = (int8_t*)(v_channel + image_w * row);
         for (size_t col = 0;col < ll_w;col++) {
             for (int chan = ICER_CHANNEL_MIN;chan <= ICER_CHANNEL_MAX;chan++) {
-                (*signed_pixel[chan]) -= (int8_t)ll_mean[chan];
+                (*signed_pixel[chan]) = (int8_t)(*signed_pixel[chan] - (int8_t)ll_mean[chan]);
                 signed_pixel[chan] ++;
             }
         }
@@ -173,7 +175,7 @@ int icer_compress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint8_
 
         icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         res = icer_compress_partition_uint8(data_start, &partition_params, image_w, &(icer_packets[it]), output_data,
-                                            icer_rearrange_segments_8[icer_packets[it].channel][icer_packets[it].decomp_level][icer_packets[it].subband_type][icer_packets[it].lsb]);
+                                            (const icer_image_segment_typedef **) icer_rearrange_segments_8[icer_packets[it].channel][icer_packets[it].decomp_level][icer_packets[it].subband_type][icer_packets[it].lsb]);
         if (res != ICER_RESULT_OK) {
             break;
         }
@@ -319,7 +321,7 @@ int icer_decompress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint
         signed_pixel[ICER_CHANNEL_V] = (int8_t*)(v_channel + im_w * row);
         for (size_t col = 0;col < ll_w;col++) {
             for (int chan = ICER_CHANNEL_MIN;chan <= ICER_CHANNEL_MAX;chan++) {
-                (*signed_pixel[chan]) += (int8_t) ll_mean[chan];
+                (*signed_pixel[chan]) = (int8_t)(*signed_pixel[chan] + (int8_t)ll_mean[chan]);
                 signed_pixel[chan]++;
             }
         }
@@ -383,8 +385,8 @@ int icer_compress_image_yuv_uint16(uint16_t *y_channel, uint16_t *u_channel, uin
         signed_pixel[ICER_CHANNEL_V] = (int16_t*)(v_channel + image_w * row);
         for (size_t col = 0;col < ll_w;col++) {
             for (int chan = ICER_CHANNEL_MIN;chan <= ICER_CHANNEL_MAX;chan++) {
-                (*signed_pixel[chan]) -= (int16_t)ll_mean[chan];
-                signed_pixel[chan] ++;
+                (*signed_pixel[chan]) = (int16_t)(*signed_pixel[chan] - (int16_t)ll_mean[chan]);
+                signed_pixel[chan]++;
             }
         }
     }
@@ -497,7 +499,7 @@ int icer_compress_image_yuv_uint16(uint16_t *y_channel, uint16_t *u_channel, uin
 
         icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         res = icer_compress_partition_uint16(data_start, &partition_params, image_w, &(icer_packets_16[it]), output_data,
-                                            icer_rearrange_segments_16[icer_packets_16[it].channel][icer_packets_16[it].decomp_level][icer_packets_16[it].subband_type][icer_packets_16[it].lsb]);
+                                             (const icer_image_segment_typedef **) icer_rearrange_segments_16[icer_packets_16[it].channel][icer_packets_16[it].decomp_level][icer_packets_16[it].subband_type][icer_packets_16[it].lsb]);
         if (res != ICER_RESULT_OK) {
             break;
         }
@@ -644,7 +646,7 @@ int icer_decompress_image_yuv_uint16(uint16_t * const y_channel, uint16_t * cons
         signed_pixel[ICER_CHANNEL_V] = (int16_t*)(v_channel + im_w * row);
         for (size_t col = 0;col < ll_w;col++) {
             for (int chan = ICER_CHANNEL_MIN;chan <= ICER_CHANNEL_MAX;chan++) {
-                (*signed_pixel[chan]) += (int16_t) ll_mean[chan];
+                (*signed_pixel[chan]) = (int16_t)(*signed_pixel[chan] + (int16_t)ll_mean[chan]);
                 signed_pixel[chan]++;
             }
         }

@@ -169,7 +169,7 @@ int icer_flush_encode(icer_encoder_context_typedef *encoder_context) {
             /* custom non prefix code bins */
             flush = &(icer_custom_code_flush_bits[bin][(*first) & ICER_ENC_BUF_DATA_MASK][encoder_context->bin_current_buf_bits[bin]]);
             (*first) |= flush->flush_bit << encoder_context->bin_current_buf_bits[bin];
-            encoder_context->bin_current_buf_bits[bin] += flush->flush_bit_numbers;
+            encoder_context->bin_current_buf_bits[bin] = (int16_t)(encoder_context->bin_current_buf_bits[bin] + flush->flush_bit_numbers);
 
             prefix = (*first) & ICER_ENC_BUF_DATA_MASK;
 

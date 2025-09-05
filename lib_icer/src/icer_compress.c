@@ -7,9 +7,11 @@
 
 static inline int comp_packet(const void *a, const void *b) {
     if (((icer_packet_context *)a)->priority == ((icer_packet_context *)b)->priority) {
-        return ((icer_packet_context *)a)->subband_type - ((icer_packet_context *)b)->subband_type;
+        // prioritize based on subband type given same priority
+        return (((icer_packet_context *)a)->subband_type > ((icer_packet_context *)b)->subband_type) ? 1 :
+               (((icer_packet_context *)a)->subband_type < ((icer_packet_context *)b)->subband_type) ? -1 : 0;
     }
-    return ((icer_packet_context *)b)->priority - ((icer_packet_context *)a)->priority;
+    return (((icer_packet_context *)a)->priority > ((icer_packet_context *)b)->priority) ? -1 : 1;
 }
 
 #ifdef USE_UINT8_FUNCTIONS
@@ -42,7 +44,7 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
     for (size_t row = 0;row < ll_h;row++) {
         signed_pixel = (int8_t*)(image + image_w * row);
         for (size_t col = 0;col < ll_w;col++) {
-            (*signed_pixel) -= (int8_t)ll_mean;
+            *signed_pixel = (int8_t)(*signed_pixel - (int8_t)ll_mean);
             signed_pixel++;
         }
     }
@@ -113,7 +115,7 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
     }
 
     partition_param_typdef partition_params;
-    uint8_t *data_start = image;
+    uint8_t *data_start;
     for (size_t it = 0;it < ind;it++) {
         if (icer_packets[it].subband_type == ICER_SUBBAND_LL) {
             ll_w = icer_get_dim_n_low_stages(image_w, icer_packets[it].decomp_level);
@@ -138,7 +140,7 @@ int icer_compress_image_uint8(uint8_t * const image, size_t image_w, size_t imag
 
         icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         res = icer_compress_partition_uint8(data_start, &partition_params, image_w, &(icer_packets[it]), output_data,
-                                            icer_rearrange_segments_8[chan][icer_packets[it].decomp_level][icer_packets[it].subband_type][icer_packets[it].lsb]);
+                                            (const icer_image_segment_typedef **) icer_rearrange_segments_8[chan][icer_packets[it].decomp_level][icer_packets[it].subband_type][icer_packets[it].lsb]);
         if (res != ICER_RESULT_OK) {
             break;
         }
@@ -261,7 +263,7 @@ int icer_decompress_image_uint8(uint8_t * const image, size_t * const image_w, s
     for (size_t row = 0;row < ll_h;row++) {
         signed_pixel = (int8_t*)(image + im_w * row);
         for (size_t col = 0;col < ll_w;col++) {
-            (*signed_pixel) += (int8_t)ll_mean;
+            *signed_pixel = (int8_t)(*signed_pixel + (int8_t)ll_mean);
             signed_pixel++;
         }
     }
@@ -303,7 +305,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
     for (size_t row = 0;row < ll_h;row++) {
         signed_pixel = (int16_t*)(image + image_w * row);
         for (size_t col = 0;col < ll_w;col++) {
-            (*signed_pixel) -= (int16_t)ll_mean;
+            *signed_pixel = (int16_t)(*signed_pixel - (int16_t)ll_mean);
             signed_pixel++;
         }
     }
@@ -373,7 +375,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
     }
 
     partition_param_typdef partition_params;
-    uint16_t *data_start = image;
+    uint16_t *data_start;
     for (size_t it = 0;it < ind;it++) {
         if (icer_packets_16[it].subband_type == ICER_SUBBAND_LL) {
             ll_w = icer_get_dim_n_low_stages(image_w, icer_packets_16[it].decomp_level);
@@ -398,7 +400,7 @@ int icer_compress_image_uint16(uint16_t * const image, size_t image_w, size_t im
 
         icer_generate_partition_parameters(&partition_params, ll_w, ll_h, segments);
         res = icer_compress_partition_uint16(data_start, &partition_params, image_w, &(icer_packets_16[it]),
-                                             output_data, icer_rearrange_segments_16[chan][icer_packets_16[it].decomp_level][icer_packets_16[it].subband_type][icer_packets_16[it].lsb]);
+                                             output_data, (const icer_image_segment_typedef **) icer_rearrange_segments_16[chan][icer_packets_16[it].decomp_level][icer_packets_16[it].subband_type][icer_packets_16[it].lsb]);
         if (res != ICER_RESULT_OK) {
             break;
         }
@@ -523,7 +525,7 @@ int icer_decompress_image_uint16(uint16_t * const image, size_t * const image_w,
     for (size_t row = 0;row < ll_h;row++) {
         signed_pixel = (int16_t*)(image + im_w * row);
         for (size_t col = 0;col < ll_w;col++) {
-            (*signed_pixel) += (int16_t)ll_mean;
+            *signed_pixel = (int16_t)(*signed_pixel + (int16_t)ll_mean);
             signed_pixel++;
         }
     }
