@@ -56,12 +56,12 @@ int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt) {
 }
 
 /* calculates the crc32 for the header of each segment of the image */
-uint32_t icer_calculate_packet_crc32(icer_image_segment_typedef *pkt) {
+uint32_t icer_calculate_packet_crc32(const icer_image_segment_typedef *pkt) {
     return crc32buf((char*)pkt, sizeof(icer_image_segment_typedef) - 4);
 }
 
 /* calculates the crc32 for the data portion of each segment of the image */
-uint32_t icer_calculate_segment_crc32(icer_image_segment_typedef *pkt) {
+uint32_t icer_calculate_segment_crc32(const icer_image_segment_typedef *pkt) {
     return crc32buf((char*)pkt + sizeof(icer_image_segment_typedef), icer_ceil_div_uint32(pkt->data_length, 8));
 }
 

@@ -219,7 +219,7 @@ int icer_decompress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint
         }
     }
 
-    icer_image_segment_typedef *seg = NULL;
+    const icer_image_segment_typedef *seg = NULL;
     const uint8_t *seg_start;
     size_t offset = 0;
     size_t pkt_offset;
@@ -233,7 +233,6 @@ int icer_decompress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint
             *image_w = seg->image_w;
             *image_h = seg->image_h;
             ll_mean[ICER_GET_CHANNEL_MACRO(seg->lsb_chan)] = seg->ll_mean_val;
-            seg->lsb_chan = ICER_GET_LSB_MACRO(seg->lsb_chan);
         }
         offset += pkt_offset;
     }
@@ -546,7 +545,7 @@ int icer_decompress_image_yuv_uint16(uint16_t * const y_channel, uint16_t * cons
         }
     }
 
-    icer_image_segment_typedef *seg = NULL;
+    const icer_image_segment_typedef *seg = NULL;
     const uint8_t *seg_start;
     size_t offset = 0;
     size_t pkt_offset;
@@ -560,7 +559,6 @@ int icer_decompress_image_yuv_uint16(uint16_t * const y_channel, uint16_t * cons
             *image_w = seg->image_w;
             *image_h = seg->image_h;
             ll_mean[ICER_GET_CHANNEL_MACRO(seg->lsb_chan)] = seg->ll_mean_val;
-            seg->lsb_chan = ICER_GET_LSB_MACRO(seg->lsb_chan);
         }
         offset += pkt_offset;
     }

@@ -176,7 +176,7 @@ int icer_decompress_image_uint8(uint8_t * const image, size_t * const image_w, s
         }
     }
 
-    icer_image_segment_typedef *seg = NULL;
+    const icer_image_segment_typedef *seg = NULL;
     const uint8_t *seg_start;
     size_t offset = 0;
     size_t pkt_offset;
@@ -438,7 +438,7 @@ int icer_decompress_image_uint16(uint16_t * const image, size_t * const image_w,
         }
     }
 
-    icer_image_segment_typedef *seg = NULL;
+    const icer_image_segment_typedef *seg = NULL;
     const uint8_t *seg_start;
     size_t offset = 0;
     size_t pkt_offset = 0;
@@ -541,7 +541,7 @@ int icer_get_image_dimensions(const uint8_t *datastream, size_t data_length, siz
         return ICER_INVALID_INPUT;
     }
 
-    icer_image_segment_typedef *seg = NULL;
+    const icer_image_segment_typedef *seg = NULL;
     const uint8_t *seg_start;
     size_t offset = 0;
     size_t pkt_offset = 0;
@@ -564,7 +564,7 @@ int icer_get_image_dimensions(const uint8_t *datastream, size_t data_length, siz
 }
 #endif
 
-int icer_find_packet_in_bytestream(icer_image_segment_typedef **seg, const uint8_t *datastream, size_t data_length, size_t * const offset) {
+int icer_find_packet_in_bytestream(const icer_image_segment_typedef **seg, const uint8_t *datastream, size_t data_length, size_t * const offset) {
     (*offset) = 0;
     (*seg) = NULL;
     while ((*offset) < data_length) {
