@@ -222,7 +222,7 @@ int icer_decompress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint
         }
     }
 
-    icer_image_segment_typedef *seg = NULL;
+    const icer_image_segment_typedef *seg = NULL;
     icer_image_segment_metadata_typedef *metadata = NULL;
     const uint8_t *seg_start;
     size_t offset = 0;
@@ -236,7 +236,6 @@ int icer_decompress_image_yuv_uint8(uint8_t *y_channel, uint8_t *u_channel, uint
         if (res == ICER_RESULT_OK) {
             icer_reconstruct_data_8[ICER_GET_CHANNEL_MACRO(seg->lsb_chan)][seg->decomp_level][ICER_GET_SUBBAND_TYPE_MACRO(seg->metadata_subband_type)][seg->segment_number][ICER_GET_LSB_MACRO(seg->lsb_chan)] = seg;
             ll_mean[ICER_GET_CHANNEL_MACRO(seg->lsb_chan)] = seg->ll_mean_val;
-            seg->lsb_chan = ICER_GET_LSB_MACRO(seg->lsb_chan);
             if (ICER_GET_METADATA_FLAG_MACRO(seg->metadata_subband_type)) {
                 metadata = (icer_image_segment_metadata_typedef *) (seg + 1);
                 *image_w = metadata->image_w;
@@ -554,7 +553,7 @@ int icer_decompress_image_yuv_uint16(uint16_t * const y_channel, uint16_t * cons
         }
     }
 
-    icer_image_segment_typedef *seg = NULL;
+    const icer_image_segment_typedef *seg = NULL;
     icer_image_segment_metadata_typedef *metadata = NULL;
     const uint8_t *seg_start;
     size_t offset = 0;
@@ -568,7 +567,6 @@ int icer_decompress_image_yuv_uint16(uint16_t * const y_channel, uint16_t * cons
         if (res == ICER_RESULT_OK) {
             icer_reconstruct_data_16[ICER_GET_CHANNEL_MACRO(seg->lsb_chan)][seg->decomp_level][ICER_GET_SUBBAND_TYPE_MACRO(seg->metadata_subband_type)][seg->segment_number][ICER_GET_LSB_MACRO(seg->lsb_chan)] = seg;
             ll_mean[ICER_GET_CHANNEL_MACRO(seg->lsb_chan)] = seg->ll_mean_val;
-            seg->lsb_chan = ICER_GET_LSB_MACRO(seg->lsb_chan);
             if (ICER_GET_METADATA_FLAG_MACRO(seg->metadata_subband_type)) {
                 metadata = (icer_image_segment_metadata_typedef *) (seg + 1);
                 *image_w = metadata->image_w;

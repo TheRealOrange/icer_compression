@@ -549,7 +549,7 @@ int icer_pop_bits_from_codeword(icer_decoder_context_typedef *decoder_context, u
 int icer_decode_bit(icer_decoder_context_typedef *decoder_context, uint8_t *bit, uint32_t zero_cnt, uint32_t total_cnt);
 #endif
 
-int icer_find_packet_in_bytestream(icer_image_segment_typedef **seg, const uint8_t *datastream, size_t data_length, size_t * offset);
+int icer_find_packet_in_bytestream(const icer_image_segment_typedef **seg, const uint8_t *datastream, size_t data_length, size_t * offset);
 
 uint8_t icer_find_k(size_t len);
 size_t icer_get_dim_n_low_stages(size_t dim, uint8_t stages);
@@ -558,8 +558,8 @@ size_t icer_get_dim_n_high_stages(size_t dim, uint8_t stages);
 void icer_init_context_model_vals(icer_context_model_typedef* context_model, enum icer_subband_types subband_type);
 int icer_generate_partition_parameters(partition_param_typdef *params, size_t ll_w, size_t ll_h, uint16_t segments);
 
-uint32_t icer_calculate_packet_crc32(icer_image_segment_typedef *pkt);
-uint32_t icer_calculate_segment_crc32(icer_image_segment_typedef *pkt);
+uint32_t icer_calculate_packet_crc32(const icer_image_segment_typedef *pkt);
+uint32_t icer_calculate_segment_crc32(const icer_image_segment_typedef *pkt);
 
 int icer_init_output_struct(icer_output_data_buf_typedef *out, uint8_t *data, size_t buf_len, size_t byte_quota);
 int icer_compute_bin(uint32_t zero_cnt, uint32_t total_cnt);
